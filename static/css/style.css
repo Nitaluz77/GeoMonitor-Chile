@@ -1,0 +1,132 @@
+/* static/css/style.css */
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* --- HEADER --- */
+header {
+    background-color: white;
+    height: 60px;
+    border-bottom: 2px solid #ddd;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    z-index: 1000;
+}
+
+.logo {
+    font-family: 'ADLaM Display', cursive; /* Tu fuente original */
+    font-size: 24px;
+    color: #333;
+}
+
+.usuario-info {
+    font-size: 14px;
+}
+
+/* --- LAYOUT PRINCIPAL --- */
+main {
+    display: flex;
+    flex: 1; /* Ocupa el resto de la altura */
+    height: calc(100vh - 60px);
+}
+
+/* --- BARRA LATERAL (ASIDE) --- */
+aside {
+    width: 280px;
+    background-color: #f8f9fa;
+    border-right: 1px solid #ddd;
+    padding: 20px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    box-shadow: 2px 0 5px rgba(0,0,0,0.05);
+}
+
+.panel-titulo {
+    font-weight: bold;
+    color: #444;
+    border-bottom: 2px solid #D32F2F;
+    padding-bottom: 5px;
+    margin-bottom: 10px;
+}
+
+.subtitulo {
+    font-size: 12px;
+    color: #888;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    font-weight: bold;
+}
+
+.panel-seccion {
+    background: white;
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid #eee;
+}
+
+/* --- MAPA --- */
+#map-container {
+    flex: 1; /* Toma todo el espacio restante */
+    background-color: #e3f2fd;
+    position: relative;
+    z-index: 1;
+}
+
+/* --- BOTONES E INPUTS --- */
+button {
+    cursor: pointer;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-weight: bold;
+    transition: 0.2s;
+    width: 100%;
+    margin-bottom: 5px;
+}
+
+.btn-gris { background-color: #e0e0e0; color: #333; }
+.btn-gris:hover { background-color: #d6d6d6; }
+
+.btn-guardar { background-color: #D32F2F; color: white; }
+.btn-guardar:hover { background-color: #b71c1c; }
+
+input[type="date"], input[type="number"], select {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box; /* Importante para que no se salga */
+}
+
+/* --- MODALES --- */
+.modal-overlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(83, 82, 82, 0.6);
+    display: none; /* Oculto por defecto */
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+}
+
+.modal-box {
+    background: white;
+    padding: 25px;
+    border-radius: 10px;
+    width: 320px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}
+
+.form-group { margin-bottom: 15px; }
+.form-group label { display: block; margin-bottom: 5px; font-weight: 500;}

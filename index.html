@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GeoMonitor Chile</title>
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=ADLaM+Display&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="static/css/style.css">
+</head>
+
+<body>
+
+    <header>
+        <div class="logo">
+            <span style="border-bottom: 3px solid #D32F2F;">Geo</span>Monitor
+        </div>        
+        
+        <div class="usuario-info">
+            <div id="panel-botones">
+                <a href="#" onclick="loginReal()" style="color:#333; text-decoration:none; font-weight:bold; border: 1px solid #ccc; padding: 5px 15px; border-radius: 20px;">
+                    Usuario
+                </a>
+            </div>
+
+            <div id="panel-usuario" style="display: none; align-items: center;">
+                <span id="lbl-usuario" style="font-weight:bold; margin-right: 10px;">...</span> 
+                <a href="#" onclick="cerrarSesion()" style="color:#D32F2F; text-decoration:none; font-size: 0.9em;">(Cerrar Sesión)</a>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <aside>
+            <div class="panel-titulo">PANEL DE CONTROL</div>
+
+            <div class="panel-seccion">
+                <div class="subtitulo">FECHA</div>
+                <div id="fecha-actual" style="font-size: 0.9rem; color: #4a4a4a;">Cargando fecha...</div>
+            </div>
+            
+            <div class="panel-seccion">
+                <div class="subtitulo">CAPAS ACTIVAS</div>
+                <label class="opcion-capa" style="display:block; margin-bottom:5px; cursor:pointer;">
+                    <input type="radio" name="capa" value="temperatura" checked> Temperatura Mar
+                </label>
+                <label class="opcion-capa" style="display:block; cursor:pointer;">
+                    <input type="radio" name="capa" value="clorofila"> Clorofila (Demo)
+                </label>
+            </div>
+
+            <div class="panel-seccion">
+                <div class="subtitulo">ACCIONES RÁPIDAS</div>
+                <button class="btn-gris" onclick="abrirModal()">Ingreso Manual</button>
+                <button class="btn-gris" onclick="verBitacora()">Ver Bitácora</button>
+            </div>
+            
+            <div class="panel-seccion" style="border:none; background:none; padding:0;">
+                <div class="subtitulo">REFERENCIA</div>
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 5px;">
+                    <div style="width: 12px; height: 12px; background: #D32F2F; border-radius: 50%;"></div>
+                    <span style="font-size: 0.85rem;">Crítico (>18°C)</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <div style="width: 12px; height: 12px; background: #1976D2; border-radius: 50%;"></div>
+                    <span style="font-size: 0.85rem;">Normal</span>
+                </div>
+            </div>
+        </aside>
+
+        <div id="map-container"></div>
+    </main>
+
+    <div id="modal-ingreso" class="modal-overlay" style="display: none;">
+        <div class="modal-box">
+            <h3 style="margin-top:0; border-bottom: 2px solid #D32F2F; padding-bottom:10px; color:#333;">Nuevo Hallazgo</h3>
+            
+            <div class="form-group">
+                <label>Latitud:</label>
+                <input type="number" id="lat" value="-36.700" step="0.001">
+            </div>
+            <div class="form-group">
+                <label>Longitud:</label>
+                <input type="number" id="lng" value="-73.100" step="0.001">
+            </div>
+            <div class="form-group">
+                <label>Temperatura (°C):</label>
+                <input type="number" id="temp" value="16.5" step="0.1">
+            </div>
+            <div class="form-group">
+                <label>Nivel de Alerta:</label>
+                <select id="alerta">
+                    <option value="Normal">🟢 Normal</option>
+                    <option value="Critico">🔴 Crítico</option>
+                </select>
+            </div>
+            
+            <div style="display:flex; gap:10px; margin-top:15px;">
+                <button class="btn-gris" onclick="cerrarModal()">Cancelar</button>
+                <button class="btn-guardar" onclick="guardarDato()">GUARDAR DATOS</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="static/js/main.js"></script> 
+</body>
+</html>
