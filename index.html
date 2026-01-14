@@ -6,6 +6,7 @@
     <title>GeoMonitor Chile</title>
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=ADLaM+Display&display=swap" rel="stylesheet">
@@ -23,13 +24,15 @@
         <div class="usuario-info">
             <div id="panel-botones">
                 <a href="#" onclick="loginReal()" style="color:#333; text-decoration:none; font-weight:bold; border: 1px solid #ccc; padding: 5px 15px; border-radius: 20px;">
-                    Usuario
+                    👤 Usuario
                 </a>
             </div>
 
-            <div id="panel-usuario" style="display: none; align-items: center;">
-                <span id="lbl-usuario" style="font-weight:bold; margin-right: 10px;">...</span> 
-                <a href="#" onclick="cerrarSesion()" style="color:#D32F2F; text-decoration:none; font-size: 0.9em;">(Cerrar Sesión)</a>
+            <div id="panel-usuario" style="display: none; align-items: center; gap: 10px;">
+                <span id="lbl-usuario" style="font-weight:bold; color: #2E7D32;">...</span> 
+                <a href="#" onclick="cerrarSesion()" style="color:#D32F2F; text-decoration:none; font-size: 0.8em; border: 1px solid #D32F2F; padding: 2px 8px; border-radius: 4px;">
+                    Salir
+                </a>
             </div>
         </div>
     </header>
@@ -44,29 +47,43 @@
             </div>
             
             <div class="panel-seccion">
-                <div class="subtitulo">CAPAS ACTIVAS</div>
-                <label class="opcion-capa" style="display:block; margin-bottom:5px; cursor:pointer;">
-                    <input type="radio" name="capa" value="temperatura" checked> Temperatura Mar
+                <div class="subtitulo"> DATOS FÍSICOS</div>
+                <label class="opcion-capa">
+                    <input type="radio" name="capa" value="temperatura" checked>  Temperatura
                 </label>
-                <label class="opcion-capa" style="display:block; cursor:pointer;">
-                    <input type="radio" name="capa" value="clorofila"> Clorofila (Demo)
+                <label class="opcion-capa">
+                    <input type="radio" name="capa" value="salinidad">  Salinidad
+                </label>
+                <label class="opcion-capa">
+                    <input type="radio" name="capa" value="velocidad_corriente">  Corrientes
+                </label>
+                <label class="opcion-capa">
+                    <input type="radio" name="capa" value="altura_mar">  Altura del Mar
+                </label>
+
+                <div class="subtitulo" style="margin-top:15px;"> DATOS BIO-GEO</div>
+                <label class="opcion-capa">
+                    <input type="radio" name="capa" value="clorofila">  Clorofila
+                </label>
+                <label class="opcion-capa">
+                    <input type="radio" name="capa" value="oxigeno">  Oxígeno Disuelto
                 </label>
             </div>
 
             <div class="panel-seccion">
                 <div class="subtitulo">ACCIONES RÁPIDAS</div>
                 <button class="btn-gris" onclick="abrirModal()">Ingreso Manual</button>
-                <button class="btn-gris" onclick="verBitacora()">Ver Bitácora</button>
+                <button class="btn-gris" onclick="window.location.href='bitacora.html'"> Ver Bitácora</button>
             </div>
             
             <div class="panel-seccion" style="border:none; background:none; padding:0;">
                 <div class="subtitulo">REFERENCIA</div>
                 <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 5px;">
                     <div style="width: 12px; height: 12px; background: #D32F2F; border-radius: 50%;"></div>
-                    <span style="font-size: 0.85rem;">Crítico (>18°C)</span>
+                    <span style="font-size: 0.85rem;">Crítico</span>
                 </div>
                 <div style="display: flex; align-items: center; gap: 8px;">
-                    <div style="width: 12px; height: 12px; background: #1976D2; border-radius: 50%;"></div>
+                    <div style="width: 12px; height: 12px; background: #388E3C; border-radius: 50%;"></div>
                     <span style="font-size: 0.85rem;">Normal</span>
                 </div>
             </div>
@@ -75,38 +92,75 @@
         <div id="map-container"></div>
     </main>
 
-    <div id="modal-ingreso" class="modal-overlay" style="display: none;">
-        <div class="modal-box">
-            <h3 style="margin-top:0; border-bottom: 2px solid #D32F2F; padding-bottom:10px; color:#333;">Nuevo Hallazgo</h3>
+    <div id="modal-ingreso" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="cerrarModal()">&times;</span>
+            <h2> Nuevo Registro de Campo</h2>
             
-            <div class="form-group">
-                <label>Latitud:</label>
-                <input type="number" id="lat" value="-36.700" step="0.001">
+            <div class="formulario-grid">
+                <div class="grupo-input">
+                    <label>Latitud:</label>
+                    <input type="number" id="input-lat" step="0.0001" placeholder="-36.xxx">
+                </div>
+                <div class="grupo-input">
+                    <label>Longitud:</label>
+                    <input type="number" id="input-lng" step="0.0001" placeholder="-73.xxx">
+                </div>
+
+                <div class="grupo-input">
+                    <label> Temperatura (°C):</label>
+                    <input type="number" id="input-temp" step="0.1">
+                </div>
+                <div class="grupo-input">
+                    <label> Salinidad (PSU):</label>
+                    <input type="number" id="input-sal" step="0.01">
+                </div>
+
+                <div class="grupo-input">
+                    <label> Corriente U (Este):</label>
+                    <input type="number" id="input-u" step="0.01" placeholder="m/s">
+                </div>
+                <div class="grupo-input">
+                    <label> Corriente V (Norte):</label>
+                    <input type="number" id="input-v" step="0.01" placeholder="m/s">
+                </div>
+                
+                <div class="grupo-input">
+                    <label> Clorofila (mg/m³):</label>
+                    <input type="number" id="input-chl" step="0.01">
+                </div>
+                <div class="grupo-input">
+                    <label> Oxígeno (mmol):</label>
+                    <input type="number" id="input-oxy" step="0.1">
+                </div>
+                
+                <div class="grupo-input">
+                    <label> Altura Mar (m):</label>
+                    <input type="number" id="input-alt" step="0.01">
+                </div>
+
+                <div class="grupo-input">
+                    <label>Estado / Alerta:</label>
+                    <select id="input-alerta">
+                        <option value="Normal">🟢 Normal</option>
+                        <option value="Precaucion">🟡 Precaución</option>
+                        <option value="Critico">🔴 Crítico</option>
+                    </select>
+                </div>
             </div>
-            <div class="form-group">
-                <label>Longitud:</label>
-                <input type="number" id="lng" value="-73.100" step="0.001">
-            </div>
-            <div class="form-group">
-                <label>Temperatura (°C):</label>
-                <input type="number" id="temp" value="16.5" step="0.1">
-            </div>
-            <div class="form-group">
-                <label>Nivel de Alerta:</label>
-                <select id="alerta">
-                    <option value="Normal">🟢 Normal</option>
-                    <option value="Critico">🔴 Crítico</option>
-                </select>
-            </div>
-            
-            <div style="display:flex; gap:10px; margin-top:15px;">
+
+            <div style="margin-top: 20px; display: flex; justify-content: flex-end; gap: 10px;">
                 <button class="btn-gris" onclick="cerrarModal()">Cancelar</button>
-                <button class="btn-guardar" onclick="guardarDato()">GUARDAR DATOS</button>
-            </div>
+                <button class="btn-guardar" onclick="guardarDatosManuales()">💾 Guardar</button>
+            </div>  
         </div>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="static/js/main.js"></script> 
+    
+    <script src="static/js/main.js"></script>
+
 </body>
 </html>
+
+    

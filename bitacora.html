@@ -1,0 +1,146 @@
+<<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bitácora Científica - GeoMonitor</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=ADLaM+Display&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="static/css/style.css">
+
+    <style>
+        /* ESTILOS DE LA BITÁCORA */
+        body { background-color: #f4f6f8; overflow: hidden; }
+
+        .contenedor-principal {
+            max-width: 1100px; /* Un poco más ancho para que quepan los datos */
+            margin: 30px auto;
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            height: 85vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* BOTÓN VOLVER */
+        .btn-volver-mapa {
+            display: inline-flex; align-items: center; gap: 8px;
+            background-color: #333; color: white; padding: 10px 20px;
+            border-radius: 30px; text-decoration: none; font-weight: bold;
+            font-size: 0.9rem; width: fit-content; margin-bottom: 20px;
+            transition: 0.3s;
+        }
+        .btn-volver-mapa:hover { background-color: #D32F2F; transform: translateY(-2px); }
+
+        /* TABLA */
+        .tabla-scroll {
+            overflow-y: auto; flex: 1;
+            border: 1px solid #eee; border-radius: 5px;
+        }
+        table { width: 100%; border-collapse: collapse; font-family: 'Segoe UI', sans-serif; font-size: 0.9rem; }
+        th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #ddd; }
+        
+        th { background-color: #263238; color: white; position: sticky; top: 0; z-index: 10; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+        tr:hover { background-color: #e3f2fd; }
+
+        /* TAGS DE ESTADO */
+        .tag { padding: 4px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; text-align: center; display: inline-block; min-width: 70px;}
+        .tag-critico { background: #ffebee; color: #c62828; border: 1px solid #ffcdd2; }
+        .tag-precaucion { background: #fffde7; color: #f9a825; border: 1px solid #fff9c4; }
+        .tag-normal { background: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo">
+            <span style="border-bottom: 3px solid #D32F2F;">Geo</span>Monitor
+        </div>        
+        <div style="font-weight: bold; color: #666; font-size: 0.9rem;">
+            📂 HISTORIAL CIENTÍFICO
+        </div>
+    </header>
+
+    <div class="contenedor-principal">
+        
+        <a href="index.html" class="btn-volver-mapa">⬅ Volver al Mapa</a>
+
+        <div style="display: flex; justify-content: space-between; margin-bottom: 10px; color: #666; font-size: 0.9rem;">
+            <span>Últimos registros sincronizados:</span>
+            <span id="contador">Cargando...</span>
+        </div>
+
+        <div class="tabla-scroll">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Coordenadas</th>
+                        <th>Temp</th>
+                        <th>Salinidad</th>
+                        <th>Altura Mar</th> <th>Corriente (Vel)</th> <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody id="tabla-cuerpo">
+                    <tr><td colspan="7" style="text-align:center; padding: 20px;">⏳ Buscando datos...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // Cargar datos al iniciar
+        fetch('http://localhost:3000/api/v1/historial-completo')
+            .then(res => res.json())
+            .then(data => {
+                const tbody = document.getElementById('tabla-cuerpo');
+                const contador = document.getElementById('contador');
+                
+                tbody.innerHTML = ''; // Limpiar mensaje de carga
+                contador.innerText = `${data.length} registros encontrados`;
+
+                if (data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:20px;">📭 La base de datos está vacía.</td></tr>';
+                    return;
+                }
+
+                data.forEach(d => {
+                    // 1. Estilos dinámicos de Alerta
+                    let clase = 'tag-normal';
+                    let texto = 'NORMAL';
+                    if(d.nivel_alerta === 'Critico') { clase = 'tag-critico'; texto = 'CRÍTICO'; }
+                    if(d.nivel_alerta === 'Precaucion') { clase = 'tag-precaucion'; texto = 'ALERTA'; }
+
+                    // 2. Formato de Fecha
+                    let fecha = d.fecha ? new Date(d.fecha).toLocaleString('es-CL') : '---';
+
+                    // 3. Manejo de nulos (si viene null, poner guión)
+                    const fmt = (n) => (n !== null && n !== undefined) ? parseFloat(n).toFixed(2) : '-';
+
+                    // 4. Crear Fila HTML (Asegúrate que coincida con los TH de arriba)
+                    const fila = `
+                        <tr>
+                            <td style="font-size:0.85rem; color:#555;">${fecha}</td>
+                            <td style="font-size:0.85rem;">${fmt(d.latitud)}, ${fmt(d.longitud)}</td>
+                            <td><b>${fmt(d.temperatura)} °C</b></td>
+                            <td>${fmt(d.salinidad)} PSU</td>
+                            <td style="color:#0277BD;"><b>${fmt(d.altura_mar)} m</b></td>
+                            <td style="color:#00695C;"><b>${fmt(d.velocidad_total)} m/s</b></td>
+                            <td><span class="tag ${clase}">${texto}</span></td>
+                        </tr>
+                    `;
+                    tbody.innerHTML += fila;
+                });
+            })
+            .catch(err => {
+                console.error(err);
+                document.getElementById('tabla-cuerpo').innerHTML = '<tr><td colspan="7" style="color:red; text-align:center;">❌ Error: No se pudo conectar con el servidor. Revisa que server.py esté corriendo.</td></tr>';
+            });
+    </script>
+
+</body>
+</html>

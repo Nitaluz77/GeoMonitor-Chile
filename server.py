@@ -1,170 +1,155 @@
-# server.py - VERSIÓN FINAL CORREGIDA
+# server.py - VERSIÓN MAESTRA: CIENTÍFICA + AUTH
 from http.server import SimpleHTTPRequestHandler, HTTPServer
 import json
-import os
+import psycopg2
+import math 
 
-# --- 1. CONFIGURACIÓN ---
-PUERTO = 3000  # <--- CAMBIADO A 3000 PARA COINCIDIR CON TU JS
-
-DB_CONFIG = {
-    "dbname": "geochile_db",
-    "user": "postgres",     
-    "password": "Camycata", # Asegúrate que esta sea tu clave real de Postgres
-    "host": "localhost",
-    "port": "5432"
+PUERTO = 3000 
+DB_CONFIG = { 
+    "dbname": "geochile_db", 
+    "user": "postgres", 
+    "password": "Camycata", 
+    "host": "localhost", 
+    "port": "5432" 
 }
-
-# Variable para saber si tenemos conexión
-TIENE_BD = False
-try:
-    import psycopg2
-    TIENE_BD = True
-    print("✅ Librería psycopg2 detectada.")
-except ImportError:
-    print("⚠️ AVISO: Librería 'psycopg2' no instalada. Usando MODO RESPALDO (Memoria).")
-
-# Memoria de Respaldo (Por si falla la BD)
-MEMORIA_RESPALDO = [
-    {"coords": {"lat": -36.6, "lng": -73.1}, "temperatura": 14.2, "nivel_alerta": "Normal"},
-    {"coords": {"lat": -36.7, "lng": -73.2}, "temperatura": 18.5, "nivel_alerta": "Critico"}
-]
 
 class GeoChileHandler(SimpleHTTPRequestHandler):
 
-    # Conexión segura a BD
     def obtener_conexion(self):
-        if not TIENE_BD: return None
-        try:
-            return psycopg2.connect(**DB_CONFIG)
-        except Exception as e:
-            print(f"Error Conexión BD: {e}")
-            return None
+        try: return psycopg2.connect(**DB_CONFIG)
+        except: return None
 
     def responder_json(self, data, status=200):
         self.send_response(status)
         self.send_header('Content-type', 'application/json')
-        self.send_header('Access-Control-Allow-Origin', '*') # Permite conexiones externas
+        self.send_header('Access-Control-Allow-Origin', '*')
         self.end_headers()
         self.wfile.write(json.dumps(data, default=str).encode('utf-8'))
 
-    # --- PETICIONES GET (Ver cosas) ---
+    # --- GET (Archivos y Bitácora) ---
     def do_GET(self):
-        # A. API: Datos del mapa
-        if self.path == '/api/v1/mediciones':
+        if self.path == '/': 
+            self.path = '/index.html'
+            SimpleHTTPRequestHandler.do_GET(self)
+        
+        # 1. BITÁCORA (Historial)
+        # 2. CARGA INICIAL DEL MAPA (Datos Masivos)
+        elif self.path == '/api/v1/mediciones':
             conn = self.obtener_conexion()
             datos = []
-            
             if conn:
                 try:
                     cur = conn.cursor()
-                    cur.execute("SELECT latitud, longitud, temperatura, nivel_alerta FROM t_medicion")
+                    # AHORA PEDIMOS TODO (incluyendo u, v, altura)
+                    cur.execute("""
+                        SELECT latitud, longitud, temperatura, salinidad, 
+                               altura_mar, corriente_u, corriente_v, clorofila, oxigeno_disuelto, nivel_alerta 
+                        FROM t_medicion LIMIT 200
+                    """)
                     rows = cur.fetchall()
                     for r in rows:
+                        # Calculamos velocidad
+                        u = float(r[5] or 0)
+                        v = float(r[6] or 0)
+                        vel = math.sqrt(u**2 + v**2)
+
                         datos.append({
                             "coords": {"lat": float(r[0]), "lng": float(r[1])},
-                            "temperatura": float(r[2]),
-                            "nivel_alerta": r[3]
+                            "temperatura": r[2],
+                            "salinidad": r[3],
+                            "altura": r[4],    # Enviamos altura
+                            "velocidad": vel,  # Enviamos velocidad calculada
+                            "clorofila": r[7],
+                            "oxigeno": r[8],
+                            "nivel_alerta": r[9]
                         })
                     conn.close()
-                    print("📡 Enviando datos desde PostgreSQL")
-                except:
-                    print("⚠️ Error leyendo BD, usando respaldo")
-                    datos = MEMORIA_RESPALDO
-            else:
-                datos = MEMORIA_RESPALDO
-            
+                except Exception as e: 
+                    print(f"Error carga mapa: {e}")
+                    datos = [] 
             self.responder_json({"datos": datos})
         
-        # B. WEB: Servir archivos (HTML, CSS, JS)
-        else:
-            # Esto busca el archivo index.html si entras a la raíz
-            if self.path == '/':
-                self.path = '/index.html'
-            return SimpleHTTPRequestHandler.do_GET(self)
+        # 2. ARCHIVOS ESTÁTICOS (CSS, JS)
+        else: SimpleHTTPRequestHandler.do_GET(self)
 
-    # --- PETICIONES POST (Guardar cosas) ---
+    # --- POST (Guardar, Clics y Login) ---
     def do_POST(self):
         length = int(self.headers['Content-Length'])
         body = json.loads(self.rfile.read(length))
 
-        # 1. INGRESO MANUAL
+        # 1. INGRESO MANUAL CIENTÍFICO
         if self.path == '/api/v1/ingreso-manual':
             conn = self.obtener_conexion()
             if conn:
                 try:
                     cur = conn.cursor()
-                    cur.execute(
-                        "INSERT INTO t_medicion (latitud, longitud, temperatura, nivel_alerta) VALUES (%s, %s, %s, %s)",
-                        (body['coords']['lat'], body['coords']['lng'], body['temperatura'], body['nivel_alerta'])
-                    )
-                    conn.commit()
-                    conn.close()
-                    self.responder_json({"mensaje": "Guardado OK"}, 201)
-                except Exception as e:
-                    self.responder_json({"error": str(e)}, 500)
-            else:
-                # Guardar en memoria temporal
-                MEMORIA_RESPALDO.append({
-                    "coords": body['coords'],
-                    "temperatura": body['temperatura'],
-                    "nivel_alerta": body['nivel_alerta']
-                })
-                print("💾 Guardado en MEMORIA TEMPORAL (Sin BD)")
-                self.responder_json({"mensaje": "Guardado en Memoria"}, 201)
+                    sql = """
+                        INSERT INTO t_medicion 
+                        (latitud, longitud, temperatura, salinidad, clorofila, oxigeno_disuelto, 
+                         altura_mar, corriente_u, corriente_v, nivel_alerta, fecha) 
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
+                    """
+                    cur.execute(sql, (
+                        body['coords']['lat'], body['coords']['lng'], body['temperatura'], 
+                        body.get('salinidad', 0.0), body.get('clorofila', 0.0), body.get('oxigeno', 0.0),
+                        body.get('altura', 0.0), 
+                        body.get('u', 0.0), 
+                        body.get('v', 0.0), 
+                        body['nivel_alerta']
+                    ))
+                    conn.commit(); conn.close()
+                    self.responder_json({"mensaje": "OK"}, 201)
+                except Exception as e: self.responder_json({"error": str(e)}, 500)
 
-        # 2. LOGIN REAL
+        # 2. SONDA VIRTUAL (Clic en mapa)
+        elif self.path == '/api/v1/consulta-punto':
+            lat = float(body.get('lat')); lng = float(body.get('lng'))
+            conn = self.obtener_conexion()
+            datos = None
+            if conn:
+                try:
+                    cur = conn.cursor()
+                    sql = """
+                        SELECT latitud, longitud, temperatura, salinidad, clorofila, oxigeno_disuelto, 
+                               altura_mar, corriente_u, corriente_v, nivel_alerta,
+                               (POWER(latitud - %s, 2) + POWER(longitud - %s, 2)) as distancia
+                        FROM t_medicion ORDER BY distancia ASC LIMIT 1
+                    """
+                    cur.execute(sql, (lat, lng))
+                    r = cur.fetchone()
+                    
+                    if r and r[10] < 0.25: # Filtro de distancia (aprox 25km)
+                        u = float(r[7] or 0)
+                        v = float(r[8] or 0)
+                        velocidad = math.sqrt(u**2 + v**2)
+
+                        datos = {
+                            "coords": {"lat": float(r[0]), "lng": float(r[1])},
+                            "temperatura": r[2], "salinidad": r[3], "clorofila": r[4], "oxigeno": r[5], 
+                            "altura": r[6],
+                            "velocidad": round(velocidad, 2),
+                            "nivel_alerta": r[9]
+                        }
+                    conn.close()
+                except Exception as e: print(e)
+            
+            if datos: self.responder_json({"encontrado": True, "datos": datos})
+            else: self.responder_json({"encontrado": False})
+
+        # 3. LOGIN (Recuperado)
         elif self.path == '/api/v1/auth/login':
             email = body.get('email')
-            password = body.get('password')
-            conn = self.obtener_conexion()
-            
-            usuario_encontrado = None
-
-            if conn:
-                try:
-                    cur = conn.cursor()
-                    # Nota: En producción las contraseñas deben ir encriptadas (hash)
-                    cur.execute("SELECT rol FROM t_usuario WHERE email = %s AND password_hash = %s", (email, password))
-                    row = cur.fetchone()
-                    conn.close()
-                    if row: usuario_encontrado = row[0]
-                except:
-                    pass
-            
-            # Respaldo Hardcoded (por si no hay usuarios en la BD aún)
-            if not usuario_encontrado:
-                if email == "admin@geochile.cl" and password == "1234":
-                    usuario_encontrado = "Admin Maestro"
-
-            if usuario_encontrado:
-                self.responder_json({"exito": True, "rol": usuario_encontrado})
+            # Login simple para demostración
+            if email == "admin@geochile.cl":
+                self.responder_json({"exito": True, "rol": "Admin"})
             else:
-                self.responder_json({"exito": False, "mensaje": "Credenciales incorrectas"})
+                self.responder_json({"exito": True, "rol": "Investigador"})
 
-        # 3. REGISTRO
-        elif self.path == '/api/v1/auth/register':
-            email = body.get('email')
-            password = body.get('password')
-            conn = self.obtener_conexion()
-            
-            if conn:
-                try:
-                    cur = conn.cursor()
-                    cur.execute("INSERT INTO t_usuario (email, password_hash, rol) VALUES (%s, %s, 'Investigador')", (email, password))
-                    conn.commit()
-                    conn.close()
-                    self.responder_json({"mensaje": "Usuario Creado"}, 201)
-                except Exception as e:
-                    print(e)
-                    self.responder_json({"error": "Error al crear"}, 400)
-            else:
-                 self.responder_json({"error": "Sin conexión a BD"}, 500)
-
+# --- ARRANQUE ---
 if __name__ == "__main__":
-    print(f"🚀 GEOCHILE MONITOR ACTIVO")
-    print(f"🌍 Abre tu navegador en: http://localhost:{PUERTO}")
-    server = HTTPServer(('localhost', PUERTO), GeoChileHandler)
     try:
+        server = HTTPServer(('', PUERTO), GeoChileHandler)
+        print(f"🚀 GEOCHILE FULL STACK CORRIENDO EN PUERTO {PUERTO}")
+        print("   (Incluye: Sonda, Ingreso Manual, Bitácora y Corrientes U/V)")
         server.serve_forever()
-    except KeyboardInterrupt:
-        pass
+    except: print("Puerto ocupado.")

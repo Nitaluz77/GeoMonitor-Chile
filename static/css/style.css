@@ -1,132 +1,214 @@
 /* static/css/style.css */
+
+:root {
+    --color-primario: #4A4A4A; /* Gris grafito: Jerarquia visual en paneles */    
+    --color-fondo: #C0C0C0; /* Gris Plata: Fondo neutro */
+    --color-texto: #FFFFFF; /* Blanco: Para texto sobre fondo oscuro */
+    --colort-acento: #D32F2F; /* Rojo Alerta: Para destacar elemntos criticos */
+    }
+
+/* 1. Reset básico */
 body {
     margin: 0;
     padding: 0;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    height: 100vh;
+    background-color: var(--color-fondo);
+    font-family: 'Arial', sans-serif; /* Tipografía para legibilidad */
     display: flex;
     flex-direction: column;
+    height: 100vh; /* Ocupa toda la altura de la ventana */
+    overflow: hidden; /* Evita doble scroll */
 }
 
-/* --- HEADER --- */
+/* 2. Header (Barra Superior) */
 header {
-    background-color: white;
-    height: 60px;
-    border-bottom: 2px solid #ddd;
+    background-color: #A0A0A0;
+    color: #333;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 20px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-    z-index: 1000;
+    padding: 10PX 20px;
+    border-bottom: 3px solid var(--colort-acento);
 }
 
 .logo {
-    font-family: 'ADLaM Display', cursive; /* Tu fuente original */
-    font-size: 24px;
+    font-weight: bold;
+    font-size: 1.2rem;
     color: #333;
+    text-transform: uppercase;
 }
 
-.usuario-info {
-    font-size: 14px;
-}
-
-/* --- LAYOUT PRINCIPAL --- */
+/* 3. Estructura Principal (Panel + Mapa) */
 main {
     display: flex;
-    flex: 1; /* Ocupa el resto de la altura */
+    flex: 1; /* Ocupa el resto de la pantalla */
+    padding: 10px;
+    gap: 10px;
     height: calc(100vh - 60px);
 }
 
-/* --- BARRA LATERAL (ASIDE) --- */
+/* 4. Panel Lateral (Izquierda) */
 aside {
-    width: 280px;
-    background-color: #f8f9fa;
-    border-right: 1px solid #ddd;
-    padding: 20px;
+    width: 250px;/* Ancho fijo */
+    background-color: #B0B0B0;
+    border-radius: 5px;
+    padding: 10px;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
-    gap: 20px;
-    box-shadow: 2px 0 5px rgba(0,0,0,0.05);
+    gap: 15px;
 }
 
 .panel-titulo {
+    background-color: var(--color-panel);/*Uso de variable global*/
     font-weight: bold;
-    color: #444;
-    border-bottom: 2px solid #D32F2F;
-    padding-bottom: 5px;
+    color: var(--color-texto);
+    padding: 10px;
+    text-align: center;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
     margin-bottom: 10px;
 }
 
-.subtitulo {
-    font-size: 12px;
-    color: #888;
-    text-transform: uppercase;
-    margin-bottom: 8px;
-    font-weight: bold;
-}
-
 .panel-seccion {
-    background: white;
-    padding: 15px;
-    border-radius: 8px;
-    border: 1px solid #eee;
+    background-color: #999;
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 4px;
 }
 
-/* --- MAPA --- */
+.subtitulo {
+    font-size: 0.9rem;
+    font-weight: bold;
+    color: white;
+    margin-bottom: 5px;
+    text-transform: uppercase;
+    text-align: center;
+}
+
+/*Estilo para mostrar datos de solo lectura*/
+.dato-caja {
+    background-color: #D3D3D3;
+    padding: 5px;
+    text-align: center;
+    font-weight: bold;
+    color: #333;
+}
+
+/* Botones del Panel */
+.opcion-capa {
+    display: block;
+    color: white;
+    margin: 5px 0;
+    cursor: pointer;
+}
+
+.btn-gris {
+    width: 100%;
+    padding: 8px;
+    background-color: #D3D3D3;
+    border: none;
+    cursor: pointer;
+    font-weight: bold;
+    color: #333;
+    margin-top: 5px;
+    transition: background-color 0.3s;
+}
+.btn-gris:hover { background-color: white; }
+
+/* 5. EL MAPA (IMPORTANTE: Debe tener tamaño) */
 #map-container {
-    flex: 1; /* Toma todo el espacio restante */
-    background-color: #e3f2fd;
+    flex: 1; /* Ocupa todo el espacio restante */
+    background-color: #AEEEEE; /* Placeholder */
+    border: 5px solid #808080;
+    border-radius: 4px;
     position: relative;
     z-index: 1;
 }
 
-/* --- BOTONES E INPUTS --- */
-button {
-    cursor: pointer;
-    border: none;
-    padding: 8px 12px;
-    border-radius: 4px;
-    font-weight: bold;
-    transition: 0.2s;
-    width: 100%;
-    margin-bottom: 5px;
+/*RESPONSIVIDAD (MEDIA QUERIES)*/
+/*Punto de quiebre 768pxn(Tablets y Celulares*/
+@media (max-width: 768px) {
+    main {
+        /*Cambiamos la dirección a columna para pantallas verticales*/
+        flex-direction: column;
+        height: auto;
+    }
+    aside {
+        display: none; /*Ocultamos el panel lateral en móviles*/
+    }
+
+    #map-container {
+        height: 100vh; /* El mapa ocupa toda la pantalla en movil */
+        border: none;
+    }
+
+    /* Inyección de botón menu mediante CSS (pseudo-elemento) */
+    header::before {
+        content: "☰";
+        font-size: 1.5rem;
+        margin-right: 10px;
+        cursor: pointer;
+    }
 }
 
-.btn-gris { background-color: #e0e0e0; color: #333; }
-.btn-gris:hover { background-color: #d6d6d6; }
+/* 6. VENTANA MODAL (Para el ingreso manual) */
+.modal {
+    display: none; /* Oculto por defecto */
+    position: fixed; 
+    z-index: 2000; /* Por encima de todo */
+    left: 0;
+    top: 0;
+    width: 100%; 
+    height: 100%; 
+    background-color: rgba(0,0,0,0.6); /* Fondo negro transparente */
+}
 
-.btn-guardar { background-color: #D32F2F; color: white; }
-.btn-guardar:hover { background-color: #b71c1c; }
+.modal-content {
+    background-color: #fefefe;
+    margin: 10% auto; /* Centrado vertical */
+    padding: 20px;
+    border: 1px solid #888;
+    width: 400px; /* Ancho fijo */
+    border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+}
 
-input[type="date"], input[type="number"], select {
-    width: 100%;
-    padding: 8px;
+.close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+.close:hover { color: #000; }
+
+/* Formulario dentro del modal */
+.formulario-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.grupo-input {
+    display: flex;
+    flex-direction: column;
+}
+.grupo-input label { font-size: 0.8rem; margin-bottom: 3px; font-weight: bold; }
+.grupo-input input, .grupo-input select {
+    padding: 5px;
     border: 1px solid #ccc;
     border-radius: 4px;
-    box-sizing: border-box; /* Importante para que no se salga */
 }
 
-/* --- MODALES --- */
-.modal-overlay {
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    background: rgba(83, 82, 82, 0.6);
-    display: none; /* Oculto por defecto */
-    justify-content: center;
-    align-items: center;
-    z-index: 2000;
+.btn-guardar {
+    background: #2E7D32;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
 }
-
-.modal-box {
-    background: white;
-    padding: 25px;
-    border-radius: 10px;
-    width: 320px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-}
-
-.form-group { margin-bottom: 15px; }
-.form-group label { display: block; margin-bottom: 5px; font-weight: 500;}
+.btn-guardar:hover { background: #1B5E20; }
