@@ -23,13 +23,13 @@
         
         <div class="usuario-info">
             <div id="panel-botones">
-                <a href="#" onclick="loginReal()" style="color:#333; text-decoration:none; font-weight:bold; border: 1px solid #ccc; padding: 5px 15px; border-radius: 20px;">
-                    👤 Usuario
+                <a href="#" onclick="loginReal()" style="color:#333; text-decoration:none; font-weight:bold; border: 1px solid #ccc; padding: 5px 15px; border-radius: 20px; background: white;">
+                    👤 Iniciar Sesión
                 </a>
             </div>
 
             <div id="panel-usuario" style="display: none; align-items: center; gap: 10px;">
-                <span id="lbl-usuario" style="font-weight:bold; color: #2E7D32;">...</span> 
+                <span id="lbl-usuario" style="font-weight:bold; color: #2E7D32;">Usuario</span> 
                 <a href="#" onclick="cerrarSesion()" style="color:#D32F2F; text-decoration:none; font-size: 0.8em; border: 1px solid #D32F2F; padding: 2px 8px; border-radius: 4px;">
                     Salir
                 </a>
@@ -47,43 +47,32 @@
             </div>
             
             <div class="panel-seccion">
-                <div class="subtitulo"> DATOS FÍSICOS</div>
+                <div class="subtitulo">VISUALIZACIÓN DE CAPAS</div>
                 <label class="opcion-capa">
-                    <input type="radio" name="capa" value="temperatura" checked>  Temperatura
+                    <input type="radio" name="capa" value="temperatura" checked onclick="cambiarCapa()">  Temperatura
                 </label>
                 <label class="opcion-capa">
-                    <input type="radio" name="capa" value="salinidad">  Salinidad
+                    <input type="radio" name="capa" value="Datos Fisicos" onclick="cambiarCapa()">  Datos Físicos
                 </label>
                 <label class="opcion-capa">
-                    <input type="radio" name="capa" value="velocidad_corriente">  Corrientes
-                </label>
-                <label class="opcion-capa">
-                    <input type="radio" name="capa" value="altura_mar">  Altura del Mar
-                </label>
-
-                <div class="subtitulo" style="margin-top:15px;"> DATOS BIO-GEO</div>
-                <label class="opcion-capa">
-                    <input type="radio" name="capa" value="clorofila">  Clorofila
-                </label>
-                <label class="opcion-capa">
-                    <input type="radio" name="capa" value="oxigeno">  Oxígeno Disuelto
+                    <input type="radio" name="capa" value="Datos Biologicos" onclick="cambiarCapa()">  Datos Biológicos
                 </label>
             </div>
 
             <div class="panel-seccion">
-                <div class="subtitulo">ACCIONES RÁPIDAS</div>
-                <button class="btn-gris" onclick="abrirModal()">Ingreso Manual</button>
-                <button class="btn-gris" onclick="window.location.href='bitacora.html'"> Ver Bitácora</button>
+                <div class="subtitulo">ACCIONES</div>
+                <button id="btn-ingreso" class="btn-gris" onclick="abrirModal()">Ingreso Manual</button>
+                <button class="btn-gris" onclick="window.location.href='bitacora.html'"> 📄 Ver Bitácora</button>
             </div>
             
             <div class="panel-seccion" style="border:none; background:none; padding:0;">
                 <div class="subtitulo">REFERENCIA</div>
                 <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 5px;">
                     <div style="width: 12px; height: 12px; background: #D32F2F; border-radius: 50%;"></div>
-                    <span style="font-size: 0.85rem;">Crítico</span>
+                    <span style="font-size: 0.85rem;">Alerta Alta (>17°C)</span>
                 </div>
                 <div style="display: flex; align-items: center; gap: 8px;">
-                    <div style="width: 12px; height: 12px; background: #388E3C; border-radius: 50%;"></div>
+                    <div style="width: 12px; height: 12px; background: #29B6F6; border-radius: 50%;"></div>
                     <span style="font-size: 0.85rem;">Normal</span>
                 </div>
             </div>
@@ -95,52 +84,52 @@
     <div id="modal-ingreso" class="modal">
         <div class="modal-content">
             <span class="close" onclick="cerrarModal()">&times;</span>
-            <h2> Nuevo Registro de Campo</h2>
+            <h2 style="color: #333; border-bottom: 2px solid #D32F2F; padding-bottom: 10px;"> 
+                📝 Registro de Campaña Oceanográfica
+            </h2>
             
             <div class="formulario-grid">
                 <div class="grupo-input">
-                    <label>Latitud:</label>
-                    <input type="number" id="input-lat" step="0.0001" placeholder="-36.xxx">
+                    <label>Latitud (S):</label>
+                    <input type="number" id="input-lat" step="0.0001" value="-36.6800">
                 </div>
                 <div class="grupo-input">
-                    <label>Longitud:</label>
-                    <input type="number" id="input-lng" step="0.0001" placeholder="-73.xxx">
-                </div>
-
-                <div class="grupo-input">
-                    <label> Temperatura (°C):</label>
-                    <input type="number" id="input-temp" step="0.1">
-                </div>
-                <div class="grupo-input">
-                    <label> Salinidad (PSU):</label>
-                    <input type="number" id="input-sal" step="0.01">
+                    <label>Longitud (W):</label>
+                    <input type="number" id="input-lng" step="0.0001" value="-73.0300">
                 </div>
 
                 <div class="grupo-input">
-                    <label> Corriente U (Este):</label>
-                    <input type="number" id="input-u" step="0.01" placeholder="m/s">
+                    <label>🌡️ Temperatura (°C): *</label>
+                    <input type="number" id="input-temp" step="0.1" placeholder="Ej: 14.5">
                 </div>
                 <div class="grupo-input">
-                    <label> Corriente V (Norte):</label>
-                    <input type="number" id="input-v" step="0.01" placeholder="m/s">
-                </div>
-                
-                <div class="grupo-input">
-                    <label> Clorofila (mg/m³):</label>
-                    <input type="number" id="input-chl" step="0.01">
+                    <label>🧂 Salinidad (PSU):</label>
+                    <input type="number" id="input-sal" step="0.01" placeholder="Ej: 33.5">
                 </div>
                 <div class="grupo-input">
-                    <label> Oxígeno (mmol):</label>
-                    <input type="number" id="input-oxy" step="0.1">
+                    <label>🌊 Corriente U (Este):</label>
+                    <input type="number" id="input-u" step="0.01" value="0.5">
                 </div>
-                
                 <div class="grupo-input">
-                    <label> Altura Mar (m):</label>
-                    <input type="number" id="input-alt" step="0.01">
+                    <label>🌊 Corriente V (Norte):</label>
+                    <input type="number" id="input-v" step="0.01" value="-0.2">
+                </div>
+                <div class="grupo-input">
+                    <label>📏 Altura de Mar (m):</label>
+                    <input type="number" id="input-alt" step="0.01" value="1.2">
                 </div>
 
                 <div class="grupo-input">
-                    <label>Estado / Alerta:</label>
+                    <label>🌿 Clorofila-a (mg/m³):</label>
+                    <input type="number" id="input-chl" step="0.01" placeholder="Ej: 4.2">
+                </div>
+                <div class="grupo-input">
+                    <label>💨 Oxígeno Disuelto:</label>
+                    <input type="number" id="input-oxy" step="0.1" placeholder="Ej: 6.5">
+                </div>
+
+                <div class="grupo-input">
+                    <label>⚠️ Nivel de Alerta:</label>
                     <select id="input-alerta">
                         <option value="Normal">🟢 Normal</option>
                         <option value="Precaucion">🟡 Precaución</option>
@@ -149,18 +138,25 @@
                 </div>
             </div>
 
+            <div style="margin-top: 20px; display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 0.8em; color: gray;">* Campos obligatorios</span>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn-gris" onclick="cerrarModal()">Cancelar</button>
+                    <button class="btn-guardar" onclick="guardarDatosManuales()">💾 Registrar Datos</button>
+                </div>
+            </div>  
+        </div>
+    </div>
+
             <div style="margin-top: 20px; display: flex; justify-content: flex-end; gap: 10px;">
                 <button class="btn-gris" onclick="cerrarModal()">Cancelar</button>
-                <button class="btn-guardar" onclick="guardarDatosManuales()">💾 Guardar</button>
+                <button class="btn-guardar" onclick="guardarDatosManuales()">💾 Guardar Datos</button>
             </div>  
         </div>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    
     <script src="static/js/main.js"></script>
 
 </body>
 </html>
-
-    

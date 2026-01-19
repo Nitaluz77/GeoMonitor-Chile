@@ -1,12 +1,13 @@
-// static/js/main.js - VERSIÓN FINAL INTEGRADA (MAPA + ROLES)
+// static/js/main.js 
 console.log('Cargando GeoMonitor Full Stack...');
 
-const API_URL = 'http://localhost:3000';
+const API_URL = 'http://localhost:3000'; 
 
 // ==========================================
 // 1. CONFIGURACIÓN DEL MAPA
 // ==========================================
-const map = L.map('map-container').setView([-36.675, -73.543], 8);
+// Centrado en Bahía de Concepción (Coincide con tus datos de prueba)
+const map = L.map('map-container').setView([-36.68, -73.03], 11);
 
 L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
     attribution: '&copy; CARTO',
@@ -17,13 +18,13 @@ L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
 let marcadorActual = null;
 let capaPuntos = L.layerGroup().addTo(map);
 let datosGlobales = [];
-let rolUsuario = 'Invitado'; // Por defecto
+let rolUsuario = 'Invitado';
 
 // ==========================================
 // 2. CARGA INICIAL
 // ==========================================
 document.addEventListener("DOMContentLoaded", function() {
-    // Poner fecha
+    // Poner fecha bonita
     const textoFecha = document.getElementById('fecha-actual');
     if (textoFecha) {
         textoFecha.innerText = new Date().toLocaleDateString('es-CL', { 
@@ -31,57 +32,59 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     }
 
-    // Cargar datos del mapa
+    cargarMapa();
+});
+
+function cargarMapa() {
+    console.log(" Solicitando datos al servidor...");
     fetch(`${API_URL}/api/v1/mediciones`)
         .then(res => res.json())
         .then(resp => {
+            console.log(" Datos recibidos:", resp);
             datosGlobales = resp.datos || [];
-            cambiarCapa(); // Dibujar mapa inicial
+            cambiarCapa(); // Dibujar puntos
         })
-        .catch(err => console.error("Error cargando mapa:", err));
-});
+        .catch(err => console.error("❌ Error cargando mapa:", err));
+}
 
 // ==========================================
 // 3. GESTIÓN DE CAPAS Y COLORES
 // ==========================================
 function cambiarCapa() {
-    // Ver qué radio button está seleccionado
     const radios = document.getElementsByName('capa');
     let capaSeleccionada = 'temperatura';
     for (const r of radios) { if (r.checked) capaSeleccionada = r.value; }
 
-    console.log("🎨 Cambiando a capa:", capaSeleccionada);
+    console.log(" Pintando capa:", capaSeleccionada);
     capaPuntos.clearLayers();
 
     datosGlobales.forEach(d => {
         let valor = 0;
+        // Mapeo seguro de datos
         if(capaSeleccionada === 'temperatura') valor = d.temperatura;
         if(capaSeleccionada === 'salinidad') valor = d.salinidad;
         if(capaSeleccionada === 'velocidad') valor = d.velocidad;
-        if(capaSeleccionada === 'altura') valor = d.altura;
-        if(capaSeleccionada === 'clorofila') valor = d.clorofila;
-        if(capaSeleccionada === 'oxigeno') valor = d.oxigeno;
+        if(capaSeleccionada === 'altura') valor = d.altura || 0;
 
         const color = obtenerColor(valor, capaSeleccionada);
 
+        // Creamos el círculo
         L.circleMarker([d.coords.lat, d.coords.lng], {
-            radius: 8, fillColor: color, color: "#000", weight: 1, opacity: 1, fillOpacity: 0.8
+            radius: 10, fillColor: color, color: "#fff", weight: 1, opacity: 1, fillOpacity: 0.8
         })
-        .bindTooltip(`${capaSeleccionada.toUpperCase()}: ${parseFloat(valor).toFixed(2)}`)
+        .bindTooltip(`<b>${capaSeleccionada.toUpperCase()}:</b> ${parseFloat(valor).toFixed(2)}`)
         .addTo(capaPuntos);
     });
 }
 
 function obtenerColor(val, tipo) {
-    // Semáforo solo para Temperatura
     if (tipo === 'temperatura') {
         const t = parseFloat(val || 0);
-        if (t >= 17) return '#D32F2F'; // Rojo
+        if (t >= 17) return '#D32F2F'; // Rojo (Caliente/Peligro)
         if (t >= 14) return '#FBC02D'; // Amarillo
-        return '#29B6F6';              // Azul (Frío)
+        return '#29B6F6';              // Azul
     }
-    // Color Cyan para el resto
-    return '#00E5FF'; 
+    return '#00E5FF'; // Cyan para todo lo demás
 }
 
 // ==========================================
@@ -90,6 +93,7 @@ function obtenerColor(val, tipo) {
 map.on('click', function(e) {
     document.getElementById('map-container').style.cursor = 'wait';
     
+    // Enviamos consulta al backend
     fetch(`${API_URL}/api/v1/consulta-punto`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -99,9 +103,9 @@ map.on('click', function(e) {
     .then(resp => {
         document.getElementById('map-container').style.cursor = 'crosshair';
         if (resp.encontrado) {
-            mostrarResultado(resp.datos, e.latlng.lat, e.latlng.lng);
+            mostrarPopup(resp.datos, e.latlng.lat, e.latlng.lng);
         } else {
-            // Opcional: alert("⚠️ Zona sin datos.");
+            console.log("No hay datos cercanos");
         }
     })
     .catch(err => {
@@ -110,21 +114,22 @@ map.on('click', function(e) {
     });
 });
 
-function mostrarResultado(d, lat, lng) {
+function mostrarPopup(d, lat, lng) {
     if (marcadorActual) map.removeLayer(marcadorActual);
+    
     const fmt = (n) => (n !== null && n !== undefined) ? parseFloat(n).toFixed(2) : '--';
     
     const html = `
-        <div style="font-family: Arial; min-width: 200px;">
-            <h3 style="margin:0 0 10px 0; color:#0288D1; border-bottom: 2px solid #ccc;">📍 Sonda Virtual</h3>
-            <table style="width:100%; font-size:13px;">
+        <div style="font-family: Arial; text-align:center;">
+            <h4 style="margin:0; color:#0288D1;">🔍 Sonda Virtual</h4>
+            <hr style="margin:5px 0;">
+            <table style="width:100%; font-size:12px; text-align:left;">
                 <tr><td>🌡️ Temp:</td><td><b>${fmt(d.temperatura)} °C</b></td></tr>
-                <tr style="background:#f9f9f9;"><td>🌊 Corriente:</td><td><b>${fmt(d.velocidad)} m/s</b></td></tr>
-                <tr><td>📏 Altura:</td><td><b>${fmt(d.altura)} m</b></td></tr>
-                <tr style="background:#f9f9f9;"><td>🧂 Salinidad:</td><td><b>${fmt(d.salinidad)} PSU</b></td></tr>
+                <tr><td>🌊 Velocidad:</td><td><b>${fmt(d.velocidad)} m/s</b></td></tr>
+                <tr><td>🧂 Salinidad:</td><td><b>${fmt(d.salinidad)} PSU</b></td></tr>
             </table>
-            <div style="margin-top:5px; text-align:center; font-weight:bold; color: #555;">
-                ${d.nivel_alerta || '--'}
+            <div style="margin-top:5px; background:#4CAF50; color:white; border-radius:3px; padding:2px;">
+                Estado: Normal
             </div>
         </div>
     `;
@@ -132,46 +137,36 @@ function mostrarResultado(d, lat, lng) {
 }
 
 // ==========================================
-// 5. INGRESO MANUAL (VENTANA MODAL)
+// 5. INGRESO MANUAL (MODAL)
 // ==========================================
 function abrirModal() { document.getElementById('modal-ingreso').style.display = 'block'; }
 function cerrarModal() { document.getElementById('modal-ingreso').style.display = 'none'; }
 
-// Cerrar si clic fuera
+// Cerrar al hacer clic fuera
 window.onclick = function(event) {
     const modal = document.getElementById('modal-ingreso');
     if (event.target == modal) modal.style.display = "none";
 }
 
 function guardarDatosManuales() {
-    const lat = document.getElementById('input-lat').value;
-    const lng = document.getElementById('input-lng').value;
+    // Solo capturamos lo que el servidor realmente guarda
     const temp = document.getElementById('input-temp').value;
-    
-    // Captura de datos extra
     const sal = document.getElementById('input-sal').value;
-    const chl = document.getElementById('input-chl').value;
-    const oxy = document.getElementById('input-oxy').value;
-    const alt = document.getElementById('input-alt').value;
     const u = document.getElementById('input-u').value;
     const v = document.getElementById('input-v').value;
-    const alerta = document.getElementById('input-alerta').value;
 
-    if (!lat || !lng || !temp) {
-        alert("⚠️ Faltan datos obligatorios (Lat, Lng, Temp).");
+    // Validación básica
+    if (!temp) {
+        alert("⚠️ Debes ingresar al menos la Temperatura.");
         return;
     }
 
     const datosEnvio = {
-        coords: { lat: parseFloat(lat), lng: parseFloat(lng) },
         temperatura: parseFloat(temp),
         salinidad: sal ? parseFloat(sal) : 0.0,
-        clorofila: chl ? parseFloat(chl) : 0.0,
-        oxigeno: oxy ? parseFloat(oxy) : 0.0,
-        altura: alt ? parseFloat(alt) : 0.0,
         u: u ? parseFloat(u) : 0.0,
-        v: v ? parseFloat(v) : 0.0,
-        nivel_alerta: alerta
+        v: v ? parseFloat(v) : 0.0
+        // Nota: Lat/Lng se ignoran porque el servidor asigna Zona 1 automáticamente
     };
 
     fetch(`${API_URL}/api/v1/ingreso-manual`, {
@@ -181,11 +176,10 @@ function guardarDatosManuales() {
     })
     .then(res => res.json())
     .then(data => {
-        if (data.mensaje === 'OK') {
-            alert("✅ ¡Datos guardados!");
+        if (data.mensaje === 'OK' || data.exito) { // Aceptamos ambas respuestas
+            alert("✅ ¡Datos guardados exitosamente!");
             cerrarModal();
-            // Recargar página para actualizar mapa
-            location.reload();
+            location.reload(); // Recargamos para ver el nuevo punto
         } else {
             alert("❌ Error: " + (data.error || 'Desconocido'));
         }
@@ -194,10 +188,10 @@ function guardarDatosManuales() {
 }
 
 // ==========================================
-// 6. LOGIN Y ROLES (AQUÍ ESTÁ LO QUE FALTABA)
+// 6. LOGIN Y SEGURIDAD
 // ==========================================
 function loginReal() {
-    const email = prompt("📧 Correo:", "admin@geochile.cl");
+    const email = prompt("📧 Correo Admin:", "admin@geochile.cl");
     if (!email) return;
     const password = prompt("🔑 Contraseña:", "1234");
     if (!password) return;
@@ -211,58 +205,29 @@ function loginReal() {
     .then(data => {
         if (data.exito) {
             rolUsuario = data.rol;
-            alert(`👋 ¡Bienvenido ${data.rol}!`);
-            actualizarInterfazPorRol(data.rol, email);
+            alert(`🔓 Acceso concedido: ${data.rol}`);
+            aplicarPermisos(data.rol);
         } else {
-            alert("❌ " + (data.mensaje || "Error de acceso"));
+            alert("❌ " + (data.mensaje || "Acceso denegado"));
         }
     })
     .catch(err => alert("Error de servidor: " + err));
 }
 
 function cerrarSesion() {
-    if(confirm("¿Cerrar sesión?")) {
-        window.location.reload(); // Recargar página reinicia todo a modo invitado
-    }
+    if(confirm("¿Cerrar sesión?")) window.location.reload();
 }
 
-function actualizarInterfazPorRol(rol, email) {
-    // 1. Cambiar cabecera
+function aplicarPermisos(rol) {
+    // Cambiar texto de usuario
+    document.getElementById('lbl-usuario').innerText = rol;
     document.getElementById('panel-botones').style.display = 'none';
-    const panelUser = document.getElementById('panel-usuario');
-    panelUser.style.display = 'flex';
-    document.getElementById('lbl-usuario').innerText = `${rol}`;
+    document.getElementById('panel-usuario').style.display = 'flex';
 
-    // 2. Controlar botones según Rol
-    // Necesitas poner id="btn-ingreso" a tu botón de ingreso manual en el HTML
+    // Mostrar botón de ingreso solo si es Admin o Investigador
     const btnIngreso = document.getElementById('btn-ingreso');
-    const panelAcciones = document.querySelector('.panel-seccion:nth-child(3)'); // Busca el panel de acciones
-
-    // Si es Lector -> Esconder Ingreso
-    if (rol === 'Lector' && btnIngreso) {
-        btnIngreso.style.display = 'none';
-    } 
-    // Si es Investigador -> Mostrar Ingreso
-    else if (rol === 'Investigador' && btnIngreso) {
-        btnIngreso.style.display = 'block';
-    }
-    // Si es Admin -> Mostrar Todo + Gestión
-    else if (rol === 'Admin') {
-        if (btnIngreso) btnIngreso.style.display = 'block';
-        
-        // Crear botón Admin si no existe
-        if (!document.getElementById('btn-admin-users')) {
-            const btnAdmin = document.createElement('button');
-            btnAdmin.id = 'btn-admin-users';
-            btnAdmin.className = 'btn-gris';
-            btnAdmin.innerText = '⚙️ Gestión Usuarios';
-            btnAdmin.style.marginTop = '5px';
-            btnAdmin.style.background = '#333';
-            btnAdmin.style.color = 'white';
-            btnAdmin.onclick = function() { window.location.href = 'admin_usuarios.html'; };
-            
-            // Agregarlo al panel
-            if(panelAcciones) panelAcciones.appendChild(btnAdmin);
-        }
+    if (btnIngreso) {
+        if (rol === 'Lector') btnIngreso.style.display = 'none';
+        else btnIngreso.style.display = 'block';
     }
 }
