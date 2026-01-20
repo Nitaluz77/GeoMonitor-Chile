@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Gestión de Usuarios - GeoMonitor</title>
+    <link href="https://fonts.googleapis.com/css2?family=ADLaM+Display&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="static/css/style.css">
+    
+    <style>
+        /* FONDO Y FUENTE IGUAL AL MAIN */
+        body { 
+            background-color: #f4f6f8; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0; padding: 0;
+        }
+
+        /* HEADER IGUAL AL MAIN */
+        header {
+            background: white;
+            padding: 10px 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .contenedor { 
+            max-width: 1000px; 
+            margin: 30px auto; 
+            display: flex; 
+            gap: 25px; 
+            align-items: flex-start;
+        }
+        
+        /* PANEL IZQUIERDO (TABLA) - ESTILO LIMPIO */
+        .panel-lista { 
+            flex: 2; 
+            background: white; 
+            padding: 25px; 
+            border-radius: 8px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05); 
+        }
+        
+        /* PANEL DERECHO (FORMULARIO) - ESTILO "SIDEBAR" DEL MAPA */
+        .panel-form { 
+            flex: 1; 
+            background: white; 
+            padding: 25px; 
+            border-radius: 8px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            border-top: 4px solid #D32F2F; 
+        }
+
+        /* TABLAS */
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.9rem; }
+        
+        /* CABECERA DE TABLA: Gris Oscuro (Como en Bitácora) */
+        th { background: #263238; color: white; padding: 12px; text-align: left; border-radius: 4px 4px 0 0; }
+        td { padding: 12px; border-bottom: 1px solid #eee; color: #333; }
+        
+        /* BOTÓN BORRAR: Rojo suave */
+        .btn-borrar { 
+            background: white; 
+            color: #D32F2F; 
+            border: 1px solid #D32F2F; 
+            padding: 5px 10px; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            font-size: 0.8rem; 
+            transition: 0.2s;
+        }
+        .btn-borrar:hover { background: #D32F2F; color: white; }
+
+        /* FORMULARIOS */
+        label { font-weight: bold; font-size: 0.85rem; color: #555; display: block; margin-top: 10px; }
+        input, select { 
+            width: 100%; 
+            padding: 10px; 
+            margin: 5px 0 15px 0; 
+            border-radius: 4px; 
+            border: 1px solid #ccc; 
+            box-sizing: border-box; /* Para que no se salga del borde */
+        }
+        input:focus, select:focus { outline: none; border-color: #29B6F6; }
+
+        /* BOTÓN CREAR: VERDE (Igual al botón "Guardar" del Modal) */
+        .btn-crear { 
+            width: 100%; 
+            background: #2E7D32; 
+            color: white; 
+            padding: 12px; 
+            border: none; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            font-weight: bold; 
+            font-size: 1rem;
+            margin-top: 10px;
+            transition: 0.3s;
+        }
+        .btn-crear:hover { background: #1B5E20; }
+
+        /* BOTÓN VOLVER: GRIS (Igual al panel de control) */
+        .btn-volver { 
+            text-decoration: none; 
+            color: #555; 
+            font-weight: bold; 
+            font-size: 0.9rem; 
+            border: 1px solid #ccc; 
+            padding: 5px 15px; 
+            border-radius: 20px; 
+            background: #f9f9f9;
+        }
+        .btn-volver:hover { background: #e0e0e0; }
+
+        /* ROLES */
+        .badge { padding: 3px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; }
+        .rol-admin { background: #ffebee; color: #c62828; }
+        .rol-investigador { background: #e3f2fd; color: #1565c0; }
+        .rol-lector { background: #f1f8e9; color: #33691e; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo">
+            <span style="border-bottom: 3px solid #D32F2F; font-family: 'ADLaM Display', cursive; font-size: 1.5rem; color: #333;">Geo</span>
+            <span style="font-family: 'ADLaM Display', cursive; font-size: 1.5rem; color: #333;">Monitor</span>
+        </div>        
+        <div style="font-weight: bold; color: #555;">⚙️ GESTIÓN DE USUARIOS</div>
+    </header>
+
+    <div class="contenedor">
+        
+        <div class="panel-lista">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom: 2px solid #eee; padding-bottom: 10px;">
+                <h3 style="margin:0; color:#263238;">👥 Usuarios Activos</h3>
+                <a href="index.html" class="btn-volver">⬅ Volver al Mapa</a>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Email</th>
+                        <th>Rol</th>
+                        <th>Acción</th>
+                    </tr>
+                </thead>
+                <tbody id="tabla-usuarios">
+                    <tr><td colspan="4" style="text-align:center; color:#999;">Cargando datos...</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="panel-form">
+            <h3 style="margin-top:0; color:#D32F2F; margin-bottom: 15px;">➕ Nuevo Usuario</h3>
+            
+            <label>Nombre Completo:</label>
+            <input type="text" id="new-nombre" placeholder="Ej: Juan Pérez">
+
+            <label>Correo Electrónico:</label>
+            <input type="email" id="new-email" placeholder="juan@geochile.cl">
+
+            <label>Contraseña:</label>
+            <input type="password" id="new-pass" placeholder="****">
+
+            <label>Rol de Acceso:</label>
+            <select id="new-rol">
+                <option value="2">Investigador (Edición)</option>
+                <option value="3">Lector / Invitado (Solo ver)</option>
+                <option value="1">Administrador (Total)</option>
+            </select>
+
+            <button class="btn-crear" onclick="crearUsuario()">💾 Crear Usuario</button>
+        </div>
+
+    </div>
+
+    <script>
+        const API_URL = ''; // Detecta local o ngrok automáticamente
+
+        // 1. CARGAR USUARIOS
+        function cargarUsuarios() {
+            fetch(`${API_URL}/api/v1/admin/usuarios`)
+                .then(res => res.json())
+                .then(data => {
+                    const tbody = document.getElementById('tabla-usuarios');
+                    tbody.innerHTML = '';
+                    if(!data.usuarios || data.usuarios.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center">No hay usuarios registrados.</td></tr>'; return;
+                    }
+                    data.usuarios.forEach(u => {
+                        let claseRol = 'rol-lector';
+                        if(u.rol === 'Admin') claseRol = 'rol-admin';
+                        if(u.rol === 'Investigador') claseRol = 'rol-investigador';
+
+                        tbody.innerHTML += `
+                            <tr>
+                                <td><b>${u.nombre}</b></td>
+                                <td>${u.email}</td>
+                                <td><span class="badge ${claseRol}">${u.rol}</span></td>
+                                <td>
+                                    <button class="btn-borrar" onclick="borrarUsuario(${u.id})">Eliminar</button>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                })
+                .catch(err => console.error("Error cargando usuarios:", err));
+        }
+
+        // 2. CREAR USUARIO
+        function crearUsuario() {
+            const datos = {
+                nombre: document.getElementById('new-nombre').value,
+                email: document.getElementById('new-email').value,
+                password: document.getElementById('new-pass').value,
+                rol: parseInt(document.getElementById('new-rol').value)
+            };
+
+            if(!datos.nombre || !datos.email || !datos.password) return alert("⚠️ Por favor completa todos los campos.");
+
+            fetch(`${API_URL}/api/v1/admin/crear-usuario`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(datos)
+            }).then(res => res.json()).then(d => {
+                if(d.exito) {
+                    alert("✅ Usuario creado exitosamente");
+                    cargarUsuarios(); // Recargar tabla
+                    // Limpiar campos
+                    document.getElementById('new-nombre').value = '';
+                    document.getElementById('new-email').value = '';
+                    document.getElementById('new-pass').value = '';
+                } else { alert("❌ Error: " + d.error); }
+            });
+        }
+
+        // 3. BORRAR USUARIO
+        function borrarUsuario(id) {
+            if(!confirm("⚠️ ¿Estás seguro de que deseas ELIMINAR a este usuario? Esta acción no se puede deshacer.")) return;
+            
+            fetch(`${API_URL}/api/v1/admin/eliminar-usuario`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({id: id})
+            }).then(res => res.json()).then(d => {
+                if(d.exito) { cargarUsuarios(); } 
+                else { alert("❌ Error: " + (d.error || 'No se pudo borrar')); }
+            });
+        }
+
+        // Iniciar
+        cargarUsuarios();
+    </script>
+
+</body>
+</html>

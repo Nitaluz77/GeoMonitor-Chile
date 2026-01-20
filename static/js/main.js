@@ -1,11 +1,9 @@
 // static/js/main.js 
 console.log('Cargando GeoMonitor Full Stack...');
 
-const API_URL = 'http://localhost:3000'; 
+const API_URL = 'https://propitiative-kristen-untarnishing.ngrok-free.dev'; 
 
-// ==========================================
 // 1. CONFIGURACIÓN DEL MAPA
-// ==========================================
 // Centrado en Bahía de Concepción (Coincide con tus datos de prueba)
 const map = L.map('map-container').setView([-36.68, -73.03], 11);
 
@@ -20,11 +18,9 @@ let capaPuntos = L.layerGroup().addTo(map);
 let datosGlobales = [];
 let rolUsuario = 'Invitado';
 
-// ==========================================
 // 2. CARGA INICIAL
-// ==========================================
 document.addEventListener("DOMContentLoaded", function() {
-    // Poner fecha bonita
+    // Poner fecha
     const textoFecha = document.getElementById('fecha-actual');
     if (textoFecha) {
         textoFecha.innerText = new Date().toLocaleDateString('es-CL', { 
@@ -47,9 +43,7 @@ function cargarMapa() {
         .catch(err => console.error("❌ Error cargando mapa:", err));
 }
 
-// ==========================================
 // 3. GESTIÓN DE CAPAS Y COLORES
-// ==========================================
 function cambiarCapa() {
     const radios = document.getElementsByName('capa');
     let capaSeleccionada = 'temperatura';
@@ -87,9 +81,7 @@ function obtenerColor(val, tipo) {
     return '#00E5FF'; // Cyan para todo lo demás
 }
 
-// ==========================================
 // 4. SONDA VIRTUAL (CLIC EN MAPA)
-// ==========================================
 map.on('click', function(e) {
     document.getElementById('map-container').style.cursor = 'wait';
     
@@ -136,9 +128,7 @@ function mostrarPopup(d, lat, lng) {
     marcadorActual = L.marker([lat, lng]).addTo(map).bindPopup(html).openPopup();
 }
 
-// ==========================================
 // 5. INGRESO MANUAL (MODAL)
-// ==========================================
 function abrirModal() { document.getElementById('modal-ingreso').style.display = 'block'; }
 function cerrarModal() { document.getElementById('modal-ingreso').style.display = 'none'; }
 
@@ -186,10 +176,8 @@ function guardarDatosManuales() {
     })
     .catch(err => alert("Error de conexión: " + err));
 }
-
-// ==========================================
 // 6. LOGIN Y SEGURIDAD
-// ==========================================
+
 function loginReal() {
     const email = prompt("📧 Correo Admin:", "admin@geochile.cl");
     if (!email) return;
@@ -229,5 +217,29 @@ function aplicarPermisos(rol) {
     if (btnIngreso) {
         if (rol === 'Lector') btnIngreso.style.display = 'none';
         else btnIngreso.style.display = 'block';
+  
+    }
+
+    const panelAcciones = document.querySelector('.panel-seccion:nth-child(3)'); // Panel de botones
+    
+    // Si ya existe el botón, lo borramos para no duplicar
+    const btnViejo = document.getElementById('btn-admin-users');
+    if (btnViejo) btnViejo.remove();
+
+    if (rol === 'Admin') {
+        const btnAdmin = document.createElement('button');
+        btnAdmin.id = 'btn-admin-users';
+        btnAdmin.className = 'btn-gris';
+        btnAdmin.style.marginTop = '5px';
+        btnAdmin.style.background = '#333';
+        btnAdmin.style.color = '#fff';
+        btnAdmin.innerText = '⚙️ Gestión Usuarios';
+        
+        // Al hacer clic, nos lleva a la página que creamos en el Paso 2
+        btnAdmin.onclick = function() { window.location.href = 'admin_usuarios.html'; };
+        
+        // Lo agregamos al panel
+        if(panelAcciones) panelAcciones.appendChild(btnAdmin);
     }
 }
+    

@@ -78,9 +78,8 @@
     </div>
 
     <script>
-        const API_URL = 'http://localhost:3000';
-
-        fetch(`${API_URL}/api/v1/bitacora-completa`)
+        
+        fetch(`/api/v1/bitacora-completa`)
             .then(res => res.json())
             .then(data => {
                 llenarTabla('body-fisicos', data.fisicos, 'fisico');
