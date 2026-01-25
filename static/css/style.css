@@ -1,33 +1,36 @@
 /* static/css/style.css */
 
 :root {
-    --color-primario: #4A4A4A; /* Gris grafito: Jerarquia visual en paneles */    
-    --color-fondo: #C0C0C0; /* Gris Plata: Fondo neutro */
-    --color-texto: #FFFFFF; /* Blanco: Para texto sobre fondo oscuro */
-    --colort-acento: #D32F2F; /* Rojo Alerta: Para destacar elemntos criticos */
-    }
+    --color-primario: #4A4A4A; /* Gris grafito */    
+    --color-fondo: #C0C0C0;    /* Gris Plata */
+    --color-texto: #FFFFFF;    /* Blanco */
+    --color-acento: #D32F2F;   /* Rojo Alerta (Corregido 'colort') */
+}
 
 /* 1. Reset básico */
 body {
     margin: 0;
     padding: 0;
     background-color: var(--color-fondo);
-    font-family: 'Arial', sans-serif; /* Tipografía para legibilidad */
+    font-family: 'Arial', sans-serif;
     display: flex;
     flex-direction: column;
-    height: 100vh; /* Ocupa toda la altura de la ventana */
-    overflow: hidden; /* Evita doble scroll */
+    height: 100vh; /* Viewport completo */
+    overflow: hidden; 
 }
 
-/* 2. Header (Barra Superior) */
+/* 2. Header */
 header {
     background-color: #A0A0A0;
     color: #333;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 10PX 20px;
-    border-bottom: 3px solid var(--colort-acento);
+    padding: 10px 20px; 
+    border-bottom: 3px solid var(--color-acento);
+    /* Altura mínima para asegurar consistencia */
+    min-height: 60px; 
+    box-sizing: border-box;
 }
 
 .logo {
@@ -37,18 +40,19 @@ header {
     text-transform: uppercase;
 }
 
-/* 3. Estructura Principal (Panel + Mapa) */
+/* 3. Estructura Principal */
 main {
     display: flex;
-    flex: 1; /* Ocupa el resto de la pantalla */
+    flex: 1; 
     padding: 10px;
     gap: 10px;
-    height: calc(100vh - 60px);
+    position: relative; /* Necesario para posicionar elementos absolutos si los hay */
+    overflow: hidden; /* Asegura que el contenido no desborde el layout */
 }
 
-/* 4. Panel Lateral (Izquierda) */
+/* 4. Panel Lateral */
 aside {
-    width: 250px;/* Ancho fijo */
+    width: 250px;
     background-color: #B0B0B0;
     border-radius: 5px;
     padding: 10px;
@@ -59,7 +63,7 @@ aside {
 }
 
 .panel-titulo {
-    background-color: var(--color-panel);/*Uso de variable global*/
+    background-color: var(--color-primario); 
     font-weight: bold;
     color: var(--color-texto);
     padding: 10px;
@@ -86,7 +90,6 @@ aside {
     text-align: center;
 }
 
-/*Estilo para mostrar datos de solo lectura*/
 .dato-caja {
     background-color: #D3D3D3;
     padding: 5px;
@@ -116,34 +119,38 @@ aside {
 }
 .btn-gris:hover { background-color: white; }
 
-/* 5. EL MAPA (IMPORTANTE: Debe tener tamaño) */
+/* 5. EL MAPA */
 #map-container {
-    flex: 1; /* Ocupa todo el espacio restante */
-    background-color: #AEEEEE; /* Placeholder */
+    flex: 1; 
+    background-color: #AEEEEE; 
     border: 5px solid #808080;
     border-radius: 4px;
     position: relative;
     z-index: 1;
 }
 
-/*RESPONSIVIDAD (MEDIA QUERIES)*/
-/*Punto de quiebre 768pxn(Tablets y Celulares*/
+/* RESPONSIVIDAD */
 @media (max-width: 768px) {
     main {
-        /*Cambiamos la dirección a columna para pantallas verticales*/
         flex-direction: column;
-        height: auto;
+        padding: 0; 
     }
+    
     aside {
-        display: none; /*Ocultamos el panel lateral en móviles*/
+        display: none; 
+        position: absolute;
+        z-index: 1000;
+        height: 100%;
+        left: 0;
+        top: 0;
+        box-shadow: 2px 0 5px rgba(0,0,0,0.5);
     }
 
     #map-container {
-        height: 100vh; /* El mapa ocupa toda la pantalla en movil */
         border: none;
+        border-radius: 0;
     }
 
-    /* Inyección de botón menu mediante CSS (pseudo-elemento) */
     header::before {
         content: "☰";
         font-size: 1.5rem;
@@ -152,24 +159,26 @@ aside {
     }
 }
 
-/* 6. VENTANA MODAL (Para el ingreso manual) */
+/* 6. VENTANA MODAL */
 .modal {
-    display: none; /* Oculto por defecto */
+    display: none; 
     position: fixed; 
-    z-index: 2000; /* Por encima de todo */
+    z-index: 2000; 
     left: 0;
     top: 0;
     width: 100%; 
     height: 100%; 
-    background-color: rgba(0,0,0,0.6); /* Fondo negro transparente */
+    background-color: rgba(0,0,0,0.6); 
+    backdrop-filter: blur(2px); /* Efecto moderno de desenfoque */
 }
 
 .modal-content {
     background-color: #fefefe;
-    margin: 10% auto; /* Centrado vertical */
+    margin: 10% auto; 
     padding: 20px;
     border: 1px solid #888;
-    width: 400px; /* Ancho fijo */
+    width: 90%; /* Mejor para móviles */
+    max-width: 400px; /* Límite para escritorio */
     border-radius: 8px;
     box-shadow: 0 5px 15px rgba(0,0,0,0.3);
 }
@@ -183,7 +192,6 @@ aside {
 }
 .close:hover { color: #000; }
 
-/* Formulario dentro del modal */
 .formulario-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -210,5 +218,7 @@ aside {
     border-radius: 5px;
     cursor: pointer;
     font-weight: bold;
+    grid-column: span 2;
+    margin-top: 10px;
 }
 .btn-guardar:hover { background: #1B5E20; }

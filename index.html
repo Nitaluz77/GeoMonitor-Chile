@@ -46,23 +46,32 @@
                 <div id="fecha-actual" style="font-size: 0.9rem; color: #4a4a4a;">Cargando fecha...</div>
             </div>
             
-            <div class="panel-seccion">
-                <div class="subtitulo">VISUALIZACIÓN DE CAPAS</div>
-                <label class="opcion-capa">
-                    <input type="radio" name="capa" value="temperatura" checked onclick="cambiarCapa()">  Temperatura
-                </label>
-                <label class="opcion-capa">
-                    <input type="radio" name="capa" value="Datos Fisicos" onclick="cambiarCapa()">  Datos Físicos
-                </label>
-                <label class="opcion-capa">
-                    <input type="radio" name="capa" value="Datos Biologicos" onclick="cambiarCapa()">  Datos Biológicos
-                </label>
-            </div>
+            <div class="visualizacion-capas">
+    <h5>VISUALIZACIÓN DE CAPAS</h5>
+    
+    <div class="opcion-capa">
+        <input type="radio" id="btn-temp" name="capa" value="temperatura" checked>
+        <label for="btn-temp"> Temperatura</label>
+    </div>
+
+    <div class="opcion-capa">
+        <input type="radio" id="btn-fisico" name="capa" value="fisicos">
+        <label for="btn-fisico"> Datos Físicos</label>
+    </div>
+
+    <div class="opcion-capa">
+        <input type="radio" id="btn-bio" name="capa" value="biologicos">
+        <label for="btn-bio"> Datos Biológicos</label>
+    </div>
+</div>
 
             <div class="panel-seccion">
                 <div class="subtitulo">ACCIONES</div>
                 <button id="btn-ingreso" class="btn-gris" onclick="abrirModal()">Ingreso Manual</button>
                 <button class="btn-gris" onclick="window.location.href='bitacora.html'"> Ver Bitácora</button>
+                <button id="btn-admin-users" class="btn-gris" style="display: none; background: #37474F; color: white; margin-top: 5px;" onclick="window.location.href='admin_usuarios.html'">
+               ⚙️ Gestión Usuarios
+                </button>
             </div>
             
             <div class="panel-seccion" style="border:none; background:none; padding:0;">

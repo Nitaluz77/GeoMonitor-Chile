@@ -1,27 +1,27 @@
-<!DOCTYPE html>
+<<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <title>Gestión de Usuarios - GeoMonitor</title>
     <link href="https://fonts.googleapis.com/css2?family=ADLaM+Display&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="static/css/style.css">
-    
     <style>
         /* FONDO Y FUENTE IGUAL AL MAIN */
         body { 
-            background-color: #f4f6f8; 
+            background-color: #121212; /* Fondo oscuro acorde al mapa */
+            color: #e0e0e0;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0; padding: 0;
         }
 
         /* HEADER IGUAL AL MAIN */
         header {
-            background: white;
+            background: #1e1e1e;
             padding: 10px 20px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
             display: flex;
             justify-content: space-between;
             align-items: center;
+            border-bottom: 2px solid #4CAF50;
         }
 
         .contenedor { 
@@ -30,60 +30,64 @@
             display: flex; 
             gap: 25px; 
             align-items: flex-start;
+            padding: 0 10px;
         }
         
-        /* PANEL IZQUIERDO (TABLA) - ESTILO LIMPIO */
+        /* PANEL IZQUIERDO (TABLA) */
         .panel-lista { 
             flex: 2; 
-            background: white; 
+            background: #1e1e1e; 
             padding: 25px; 
             border-radius: 8px; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05); 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3); 
         }
         
-        /* PANEL DERECHO (FORMULARIO) - ESTILO "SIDEBAR" DEL MAPA */
+        /* PANEL DERECHO (FORMULARIO) */
         .panel-form { 
             flex: 1; 
-            background: white; 
+            background: #1e1e1e; 
             padding: 25px; 
             border-radius: 8px; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
             border-top: 4px solid #D32F2F; 
         }
 
         /* TABLAS */
         table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.9rem; }
         
-        /* CABECERA DE TABLA: Gris Oscuro (Como en Bitácora) */
-        th { background: #263238; color: white; padding: 12px; text-align: left; border-radius: 4px 4px 0 0; }
-        td { padding: 12px; border-bottom: 1px solid #eee; color: #333; }
+        /* CABECERA DE TABLA */
+        th { background: #263238; color: #4CAF50; padding: 12px; text-align: left; border-radius: 4px 4px 0 0; }
+        td { padding: 12px; border-bottom: 1px solid #333; color: #ccc; }
+        tr:hover { background-color: #2a2a2a; }
         
-        /* BOTÓN BORRAR: Rojo suave */
+        /* BOTÓN BORRAR */
         .btn-borrar { 
-            background: white; 
-            color: #D32F2F; 
-            border: 1px solid #D32F2F; 
+            background: transparent; 
+            color: #ff5252; 
+            border: 1px solid #ff5252; 
             padding: 5px 10px; 
             border-radius: 4px; 
             cursor: pointer; 
             font-size: 0.8rem; 
             transition: 0.2s;
         }
-        .btn-borrar:hover { background: #D32F2F; color: white; }
+        .btn-borrar:hover { background: #ff5252; color: white; }
 
         /* FORMULARIOS */
-        label { font-weight: bold; font-size: 0.85rem; color: #555; display: block; margin-top: 10px; }
+        label { font-weight: bold; font-size: 0.85rem; color: #aaa; display: block; margin-top: 10px; }
         input, select { 
             width: 100%; 
             padding: 10px; 
             margin: 5px 0 15px 0; 
             border-radius: 4px; 
-            border: 1px solid #ccc; 
-            box-sizing: border-box; /* Para que no se salga del borde */
+            border: 1px solid #444; 
+            background: #333;
+            color: white;
+            box-sizing: border-box; 
         }
-        input:focus, select:focus { outline: none; border-color: #29B6F6; }
+        input:focus, select:focus { outline: none; border-color: #4CAF50; }
 
-        /* BOTÓN CREAR: VERDE (Igual al botón "Guardar" del Modal) */
+        /* BOTÓN CREAR */
         .btn-crear { 
             width: 100%; 
             background: #2E7D32; 
@@ -99,41 +103,41 @@
         }
         .btn-crear:hover { background: #1B5E20; }
 
-        /* BOTÓN VOLVER: GRIS (Igual al panel de control) */
+        /* BOTÓN VOLVER */
         .btn-volver { 
             text-decoration: none; 
-            color: #555; 
+            color: #ddd; 
             font-weight: bold; 
             font-size: 0.9rem; 
-            border: 1px solid #ccc; 
+            border: 1px solid #555; 
             padding: 5px 15px; 
             border-radius: 20px; 
-            background: #f9f9f9;
+            background: #333;
         }
-        .btn-volver:hover { background: #e0e0e0; }
+        .btn-volver:hover { background: #444; }
 
         /* ROLES */
         .badge { padding: 3px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; }
-        .rol-admin { background: #ffebee; color: #c62828; }
-        .rol-investigador { background: #e3f2fd; color: #1565c0; }
-        .rol-lector { background: #f1f8e9; color: #33691e; }
+        .rol-admin { background: #b71c1c; color: #fff; }
+        .rol-investigador { background: #0d47a1; color: #fff; }
+        .rol-lector { background: #1b5e20; color: #fff; }
     </style>
 </head>
 <body>
 
     <header>
         <div class="logo">
-            <span style="border-bottom: 3px solid #D32F2F; font-family: 'ADLaM Display', cursive; font-size: 1.5rem; color: #333;">Geo</span>
-            <span style="font-family: 'ADLaM Display', cursive; font-size: 1.5rem; color: #333;">Monitor</span>
+            <span style="border-bottom: 3px solid #D32F2F; font-family: 'ADLaM Display', cursive; font-size: 1.5rem; color: #fff;">Geo</span>
+            <span style="font-family: 'ADLaM Display', cursive; font-size: 1.5rem; color: #fff;">Monitor</span>
         </div>        
-        <div style="font-weight: bold; color: #555;">⚙️ GESTIÓN DE USUARIOS</div>
+        <div style="font-weight: bold; color: #aaa;">⚙️ GESTIÓN DE USUARIOS</div>
     </header>
 
     <div class="contenedor">
         
         <div class="panel-lista">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom: 2px solid #eee; padding-bottom: 10px;">
-                <h3 style="margin:0; color:#263238;">👥 Usuarios Activos</h3>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom: 2px solid #333; padding-bottom: 10px;">
+                <h3 style="margin:0; color:#4CAF50;">👥 Usuarios Activos</h3>
                 <a href="index.html" class="btn-volver">⬅ Volver al Mapa</a>
             </div>
             <table>
@@ -152,7 +156,7 @@
         </div>
 
         <div class="panel-form">
-            <h3 style="margin-top:0; color:#D32F2F; margin-bottom: 15px;">➕ Nuevo Usuario</h3>
+            <h3 style="margin-top:0; color:#ef5350; margin-bottom: 15px;"> Nuevo Usuario</h3>
             
             <label>Nombre Completo:</label>
             <input type="text" id="new-nombre" placeholder="Ej: Juan Pérez">
@@ -176,11 +180,12 @@
     </div>
 
     <script>
-        const API_URL = ''; // Detecta local o ngrok automáticamente
+        const API_URL = ''; 
 
         // 1. CARGAR USUARIOS
         function cargarUsuarios() {
-            fetch(`${API_URL}/api/v1/admin/usuarios`)
+            // Actualizado para usar la ruta del nuevo server.py
+            fetch(`${API_URL}/api/v1/usuarios`)
                 .then(res => res.json())
                 .then(data => {
                     const tbody = document.getElementById('tabla-usuarios');
@@ -189,15 +194,19 @@
                         tbody.innerHTML = '<tr><td colspan="4" style="text-align:center">No hay usuarios registrados.</td></tr>'; return;
                     }
                     data.usuarios.forEach(u => {
+                        // Mapeo de ID numérico a Nombre de Rol
+                        let nombreRol = 'Invitado';
                         let claseRol = 'rol-lector';
-                        if(u.rol === 'Admin') claseRol = 'rol-admin';
-                        if(u.rol === 'Investigador') claseRol = 'rol-investigador';
+                        
+                        if(u.id_rol === 1) { nombreRol = 'Admin'; claseRol = 'rol-admin'; }
+                        if(u.id_rol === 2) { nombreRol = 'Investigador'; claseRol = 'rol-investigador'; }
+                        if(u.id_rol === 3) { nombreRol = 'Lector'; claseRol = 'rol-lector'; }
 
                         tbody.innerHTML += `
                             <tr>
                                 <td><b>${u.nombre}</b></td>
                                 <td>${u.email}</td>
-                                <td><span class="badge ${claseRol}">${u.rol}</span></td>
+                                <td><span class="badge ${claseRol}">${nombreRol}</span></td>
                                 <td>
                                     <button class="btn-borrar" onclick="borrarUsuario(${u.id})">Eliminar</button>
                                 </td>
@@ -214,12 +223,14 @@
                 nombre: document.getElementById('new-nombre').value,
                 email: document.getElementById('new-email').value,
                 password: document.getElementById('new-pass').value,
-                rol: parseInt(document.getElementById('new-rol').value)
+                // Server espera 'id_rol', no 'rol'
+                id_rol: parseInt(document.getElementById('new-rol').value)
             };
 
             if(!datos.nombre || !datos.email || !datos.password) return alert("⚠️ Por favor completa todos los campos.");
 
-            fetch(`${API_URL}/api/v1/admin/crear-usuario`, {
+            // Actualizado a la ruta POST /api/v1/usuarios
+            fetch(`${API_URL}/api/v1/usuarios`, {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify(datos)
@@ -231,7 +242,7 @@
                     document.getElementById('new-nombre').value = '';
                     document.getElementById('new-email').value = '';
                     document.getElementById('new-pass').value = '';
-                } else { alert("❌ Error: " + d.error); }
+                } else { alert("❌ Error: " + (d.error || 'Fallo desconocido')); }
             });
         }
 
@@ -239,10 +250,8 @@
         function borrarUsuario(id) {
             if(!confirm("⚠️ ¿Estás seguro de que deseas ELIMINAR a este usuario? Esta acción no se puede deshacer.")) return;
             
-            fetch(`${API_URL}/api/v1/admin/eliminar-usuario`, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({id: id})
+            fetch(`${API_URL}/api/v1/usuarios/${id}`, {
+                method: 'DELETE'
             }).then(res => res.json()).then(d => {
                 if(d.exito) { cargarUsuarios(); } 
                 else { alert("❌ Error: " + (d.error || 'No se pudo borrar')); }

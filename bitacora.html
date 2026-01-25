@@ -2,132 +2,58 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Bitácora Científica - GeoMonitor</title>
-    <link href="https://fonts.googleapis.com/css2?family=ADLaM+Display&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="static/css/style.css">
+    <title>Bitácora - GeoMonitor</title>
     <style>
-        body { background-color: #f4f6f8; font-family: 'Segoe UI', sans-serif; }
-        .contenedor { max-width: 1200px; margin: 20px auto; padding: 20px; }
-        
-        .header-bitacora { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .btn-volver { background: #333; color: white; padding: 8px 20px; border-radius: 20px; text-decoration: none; font-weight: bold; }
-        .btn-volver:hover { background: #D32F2F; }
-
-        .seccion-tabla { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 30px; }
-        .titulo-tabla { font-size: 1.2rem; color: #0277BD; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 15px; font-weight: bold; display: flex; align-items: center; gap: 10px; }
-        
-        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
-        th { background: #ECEFF1; color: #333; padding: 12px; text-align: left; font-weight: bold; border-bottom: 2px solid #ddd; }
-        td { padding: 10px 12px; border-bottom: 1px solid #eee; }
-        tr:hover { background: #f9f9f9; }
-
-        .vacio { text-align: center; color: #999; padding: 20px; font-style: italic; }
+        body { font-family: sans-serif; padding: 20px; background: #f4f4f4; }
+        .container { max-width: 900px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; }
+        h2 { border-bottom: 2px solid #D32F2F; color: #333; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 0.9rem; }
+        th { background: #333; color: white; padding: 10px; }
+        td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+        .btn-volver { display: inline-block; padding: 10px 20px; background: #555; color: white; text-decoration: none; border-radius: 5px; }
     </style>
 </head>
 <body>
+    <div class="container">
+        <a href="index.html" class="btn-volver">⬅ Volver al Mapa</a>
+        <h1>📋 Bitácora de Datos</h1>
 
-    <header>
-        <div class="logo"><span style="border-bottom: 3px solid #D32F2F;">Geo</span>Monitor</div>
-        <div style="font-weight: bold; color: #555;">📂 BASE DE DATOS UNIFICADA</div>
-    </header>
+        <h2>🌊 Datos Físicos (Últimos 20)</h2>
+        <table>
+            <thead><tr><th>Fecha</th><th>Temp (°C)</th><th>Salinidad</th><th>Vel. (m/s)</th><th>Nivel Mar</th></tr></thead>
+            <tbody id="tabla-fisicos"><tr><td colspan="5">Cargando...</td></tr></tbody>
+        </table>
 
-    <div class="contenedor">
-        <div class="header-bitacora">
-            <a href="index.html" class="btn-volver">⬅ Volver al Mapa</a>
-            <span style="color: #666; font-size: 0.9rem;">Mostrando últimos 30 registros por tabla</span>
-        </div>
-
-        <div class="seccion-tabla">
-            <div class="titulo-tabla">
-                🌊 Tabla: datos_fisicos (Variables Oceanográficas)
-            </div>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Fecha Registro</th>
-                        <th>Temperatura</th>
-                        <th>Salinidad</th>
-                        <th>Corrientes (U / V)</th>
-                        <th>Nivel Mar</th>
-                    </tr>
-                </thead>
-                <tbody id="body-fisicos">
-                    <tr><td colspan="5" class="vacio">Cargando datos...</td></tr>
-                </tbody>
-            </table>
-        </div>
-
-        <div class="seccion-tabla">
-            <div class="titulo-tabla">
-                🌿 Tabla: datos_bio (Calidad de Agua)
-            </div>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Fecha Registro</th>
-                        <th>Clorofila-a (mg/m³)</th>
-                        <th>Oxígeno Disuelto (mmol/L)</th>
-                        <th>Estado</th>
-                    </tr>
-                </thead>
-                <tbody id="body-biologicos">
-                    <tr><td colspan="4" class="vacio">Cargando datos...</td></tr>
-                </tbody>
-            </table>
-        </div>
+        <h2>🌿 Datos Biológicos (Últimos 20)</h2>
+        <table>
+            <thead><tr><th>Fecha</th><th>Clorofila</th><th>Oxígeno</th></tr></thead>
+            <tbody id="tabla-bio"><tr><td colspan="3">Cargando...</td></tr></tbody>
+        </table>
     </div>
 
     <script>
+        const API_URL = ''; 
         
-        fetch(`/api/v1/bitacora-completa`)
+        fetch(`${API_URL}/api/v1/bitacora-completa`)
             .then(res => res.json())
             .then(data => {
-                llenarTabla('body-fisicos', data.fisicos, 'fisico');
-                llenarTabla('body-biologicos', data.biologicos, 'bio');
+                // Llenar Físicos
+                const tFis = document.getElementById('tabla-fisicos');
+                tFis.innerHTML = '';
+                data.fisicos.forEach(d => {
+                    // Calculamos magnitud velocidad
+                    let vel = Math.sqrt((d.u||0)**2 + (d.v||0)**2).toFixed(2);
+                    tFis.innerHTML += `<tr><td>${d.fecha}</td><td>${d.temp}</td><td>${d.salinidad}</td><td>${vel}</td><td>${d.nivel_mar}</td></tr>`;
+                });
+
+                // Llenar Bio
+                const tBio = document.getElementById('tabla-bio');
+                tBio.innerHTML = '';
+                data.biologicos.forEach(d => {
+                    tBio.innerHTML += `<tr><td>${d.fecha}</td><td>${d.clorofila}</td><td>${d.oxigeno}</td></tr>`;
+                });
             })
-            .catch(err => console.error("Error:", err));
-
-        function llenarTabla(idBody, datos, tipo) {
-            const tbody = document.getElementById(idBody);
-            tbody.innerHTML = '';
-
-            if (datos.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="5" class="vacio">La tabla está vacía.</td></tr>`;
-                return;
-            }
-
-            datos.forEach(d => {
-                const fecha = new Date(d.fecha).toLocaleString('es-CL');
-                const fmt = (n) => (n !== null) ? parseFloat(n).toFixed(2) : '--';
-                let html = '';
-
-                if (tipo === 'fisico') {
-                    html = `
-                        <tr>
-                            <td>${fecha}</td>
-                            <td><b>${fmt(d.temp)} °C</b></td>
-                            <td>${fmt(d.salinidad)} PSU</td>
-                            <td>U: ${fmt(d.u)} | V: ${fmt(d.v)}</td>
-                            <td>${fmt(d.nivel_mar)} m</td>
-                        </tr>`;
-                } else {
-                    // Lógica visual para biología
-                    let estado = 'Normal';
-                    if (d.oxigeno < 4) estado = '<span style="color:red; font-weight:bold;">Hipoxia</span>';
-                    else estado = '<span style="color:green;">Óptimo</span>';
-
-                    html = `
-                        <tr>
-                            <td>${fecha}</td>
-                            <td>${fmt(d.clorofila)}</td>
-                            <td>${fmt(d.oxigeno)}</td>
-                            <td>${estado}</td>
-                        </tr>`;
-                }
-                tbody.innerHTML += html;
-            });
-        }
+            .catch(err => alert("Error cargando bitácora: " + err));
     </script>
-
 </body>
 </html>
