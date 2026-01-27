@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once(__DIR__ . '/config/db.php'); // Llama conexión de Railway
+equire_once __DIR__ . '/config/db.php'; // Llama conexión de Railway
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     // 1. Limpiamos los datos para evitar inyecciones básicas
