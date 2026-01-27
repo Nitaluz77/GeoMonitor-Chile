@@ -2,7 +2,7 @@
 // 1. Datos de conexión de Railway
 $host = getenv('PGHOST') ?: "postgres.railway.internal";
 $user = getenv('PGUSER') ?: "postgres";
-$password = getenv('PGPASSWORD') ?: "TU_CLAVE_AQUI";
+$password = getenv('PGPASSWORD') ?: "KEkNqLjIOIcOExyUYAoHjIEtyCzHpZAM";
 $dbname = getenv('PGDATABASE') ?: "railway";
 $port = getenv('PGPORT') ?: "23725";
 
