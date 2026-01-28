@@ -28,9 +28,10 @@ class GeoChileHandler(http.server.SimpleHTTPRequestHandler):
         self.send_header('Access-Control-Allow-Origin', '*')
         self.end_headers()
         self.wfile.write(json.dumps(data, default=str).encode('utf-8'))
+
 def do_GET(self):
 
-    # --- ARCHIVOS ESTÁTICOS PRIMERO ---
+    # --- ARCHIVOS ESTÁTICOS ---
     if self.path == '/' or self.path.endswith(('.html', '.css', '.js', '.png', '.jpg', '.ico')):
         if self.path == '/':
             self.path = '/index.html'
@@ -140,58 +141,112 @@ def do_GET(self):
     self.send_error(404, "Ruta no encontrada")
 
 
-    def do_POST(self):
-        try:
-            length = int(self.headers['Content-Length'])
-            body = json.loads(self.rfile.read(length).decode('utf-8'))
+def do_POST(self):
+    try:
+        content_length = int(self.headers.get('Content-Length', 0))
+        raw_body = self.rfile.read(content_length).decode('utf-8')
+        body = json.loads(raw_body) if raw_body else {}
+
+        # A) LOGIN
+        if self.path == '/api/v1/auth/login':
             conn = self.obtener_conexion()
+            if not conn:
+                self.responder_json({"exito": False, "error": "DB no disponible"})
+                return
 
-            # LOGIN
-            if self.path == '/api/v1/auth/login':
-                if conn:
-                    cur = conn.cursor()
-                    cur.execute("SELECT password, id_rol FROM usuario WHERE email=%s", (body.get('email'),))
-                    user = cur.fetchone()
-                    conn.close()
-                    # Convertimos ID Rol a Nombre para el Frontend
-                    rol_nombre = "Invitado"
-                    if user and str(body.get('password')) == str(user[0]):
-                        rid = user[1]
-                        if rid == 1: rol_nombre = "Admin"
-                        elif rid == 2: rol_nombre = "Investigador"
-                        elif rid == 3: rol_nombre = "Lector"
-                        self.responder_json({"exito": True, "rol": rol_nombre})
-                    else:
-                        self.responder_json({"exito": False})
-            
-            # GUARDAR DATOS
-            elif self.path == '/api/v1/ingreso-manual':
-                if conn:
-                    cur = conn.cursor()
-                    cur.execute("INSERT INTO datos_fisicos (temperatura, salinidad, corriente_u, corriente_v, nivel_mar, id_zona, fecha_medicion) VALUES (%s,%s,%s,%s,%s,1,NOW())", 
-                                (body.get('temperatura'), body.get('salinidad'), body.get('u'), body.get('v'), body.get('altura')))
-                    if body.get('clorofila'):
-                        cur.execute("INSERT INTO datos_bio (clorofila, oxigeno_disuelto, id_zona, fecha_medicion) VALUES (%s,%s,1,NOW())", 
-                                    (body.get('clorofila'), body.get('oxigeno')))
-                    conn.commit()
-                    conn.close()
-                    self.responder_json({"exito": True})
+            cur = conn.cursor()
+            cur.execute(
+                "SELECT password, id_rol FROM usuario WHERE email=%s",
+                (body.get('email'),)
+            )
+            user = cur.fetchone()
+            conn.close()
 
-            # CREAR USUARIO
-            elif self.path == '/api/v1/usuarios':
-                if conn:
-                    cur = conn.cursor()
-                    cur.execute("INSERT INTO usuario (nombre, email, password, id_rol) VALUES (%s,%s,%s,%s)", 
-                                (body.get('nombre'), body.get('email'), body.get('password'), body.get('id_rol')))
-                    conn.commit()
-                    conn.close()
-                    self.responder_json({"exito": True})
-            
-            # DELETE
-            elif '/api/v1/usuarios/' in self.path: 
-                 pass 
+            if not user:
+                self.responder_json({"exito": False})
+                return
 
-        except Exception as e: self.responder_json({"error": str(e)}, 500)
+            password_db, id_rol = user
+
+            if str(body.get('password')) != str(password_db):
+                self.responder_json({"exito": False})
+                return
+
+            roles = {1: "Admin", 2: "Investigador", 3: "Lector"}
+
+            self.responder_json({
+                "exito": True,
+                "rol": roles.get(id_rol, "Invitado")
+            })
+            return
+
+        # B)INGRESO MANUAL
+        elif self.path == '/api/v1/ingreso-manual':
+            conn = self.obtener_conexion()
+            if not conn:
+                self.responder_json({"exito": False})
+                return
+
+            cur = conn.cursor()
+            cur.execute(
+                """
+                INSERT INTO datos_fisicos 
+                (temperatura, salinidad, corriente_u, corriente_v, nivel_mar, id_zona, fecha_medicion)
+                VALUES (%s,%s,%s,%s,%s,1,NOW())
+                """,
+                (
+                    body.get('temperatura'),
+                    body.get('salinidad'),
+                    body.get('u'),
+                    body.get('v'),
+                    body.get('altura')
+                )
+            )
+
+            if body.get('clorofila'):
+                cur.execute(
+                    """
+                    INSERT INTO datos_bio 
+                    (clorofila, oxigeno_disuelto, id_zona, fecha_medicion)
+                    VALUES (%s,%s,1,NOW())
+                    """,
+                    (body.get('clorofila'), body.get('oxigeno'))
+                )
+
+            conn.commit()
+            conn.close()
+            self.responder_json({"exito": True})
+            return
+
+        # C) CREAR USUARIO
+        elif self.path == '/api/v1/usuarios':
+            conn = self.obtener_conexion()
+            if not conn:
+                self.responder_json({"exito": False})
+                return
+
+            cur = conn.cursor()
+            cur.execute(
+                "INSERT INTO usuario (nombre, email, password, id_rol) VALUES (%s,%s,%s,%s)",
+                (
+                    body.get('nombre'),
+                    body.get('email'),
+                    body.get('password'),
+                    body.get('id_rol')
+                )
+            )
+            conn.commit()
+            conn.close()
+            self.responder_json({"exito": True})
+            return
+
+        # D) RUTA NO EXISTE
+        self.send_response(404)
+        self.end_headers()
+
+    except Exception as e:
+        print("ERROR POST:", e)
+        self.responder_json({"exito": False, "error": "Error servidor"}, 500)
 
     def do_DELETE(self):
         match = re.search(r'/api/v1/usuarios/(\d+)', self.path)

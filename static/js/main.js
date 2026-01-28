@@ -228,13 +228,11 @@ function loginReal() {
     const password = prompt("🔑 Contraseña:", "1234"); 
     if (!password) return;
 
-    fetch('login.php')
-        .then(res => res.text())
-        .then(data => {
-        console.log("RESPUESTA SERVIDOR:", data);
-  })
-
-
+    fetch(`${API_URL}/api/v1/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+    })
     .then(res => res.json())
     .then(data => {
         if (data.exito) {
