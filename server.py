@@ -28,78 +28,117 @@ class GeoChileHandler(http.server.SimpleHTTPRequestHandler):
         self.send_header('Access-Control-Allow-Origin', '*')
         self.end_headers()
         self.wfile.write(json.dumps(data, default=str).encode('utf-8'))
+def do_GET(self):
 
-    def do_GET(self):
-        conn = self.obtener_conexion()
-        
-        # 1. MAPA (Datos completos con Coordenadas Reales)
-        if self.path == '/api/v1/mediciones':
-            datos = []
-            if conn:
-                try:
-                    cur = conn.cursor()
-                    # Query Blindada
-                    sql = """
-                        SELECT d.temperatura, d.salinidad, d.corriente_u, d.corriente_v, d.nivel_mar, 
-                               z.latitud_centro, z.longitud_centro, b.clorofila, b.oxigeno_disuelto
-                        FROM datos_fisicos d
-                        JOIN zona_marina z ON d.id_zona = z.id_zona
-                        LEFT JOIN datos_bio b ON d.id_zona = b.id_zona AND d.fecha_medicion = b.fecha_medicion
-                        ORDER BY d.fecha_medicion DESC LIMIT 100
-                    """
-                    cur.execute(sql)
-                    for r in cur.fetchall():
-                        u, v = float(r[2] or 0), float(r[3] or 0)
-                        datos.append({
-                            "coords": {"lat": float(r[5]), "lng": float(r[6])}, # Coordenadas de la BD
-                            "temperatura": float(r[0]), 
-                            "salinidad": float(r[1]), 
-                            "velocidad": round(math.sqrt(u**2 + v**2), 2), 
-                            "altura": float(r[4] or 0),
-                            "clorofila": float(r[7]) if r[7] is not None else 0.0,
-                            "oxigeno": float(r[8]) if r[8] is not None else 0.0
-                        })
-                except Exception as e: print(e)
-                finally: conn.close()
-            self.responder_json({"datos": datos})
+    # --- ARCHIVOS ESTÁTICOS PRIMERO ---
+    if self.path == '/' or self.path.endswith(('.html', '.css', '.js', '.png', '.jpg', '.ico')):
+        if self.path == '/':
+            self.path = '/index.html'
+        return super().do_GET()
 
-        # 2. BITÁCORA (¡ESTO FALTABA!)
-        elif self.path == '/api/v1/bitacora-completa':
-            respuesta = {"fisicos": [], "biologicos": []}
-            if conn:
-                try:
-                    cur = conn.cursor()
-                    # Tabla Física
-                    cur.execute("SELECT fecha_medicion, temperatura, salinidad, corriente_u, corriente_v, nivel_mar FROM datos_fisicos ORDER BY fecha_medicion DESC LIMIT 20")
-                    for r in cur.fetchall():
-                         respuesta["fisicos"].append({"fecha": r[0], "temp": r[1], "salinidad": r[2], "u": r[3], "v": r[4], "nivel_mar": r[5]})
-                    
-                    # Tabla Biológica
-                    cur.execute("SELECT fecha_medicion, clorofila, oxigeno_disuelto FROM datos_bio ORDER BY fecha_medicion DESC LIMIT 20")
-                    for r in cur.fetchall():
-                        respuesta["biologicos"].append({"fecha": r[0], "clorofila": r[1], "oxigeno": r[2]})
-                except Exception as e: print(e)
-                finally: conn.close()
-            self.responder_json(respuesta)
+    # --- DESDE AQUÍ ES API ---
+    conn = self.obtener_conexion()
 
-        # 3. USUARIOS
-        elif self.path == '/api/v1/usuarios':
-            lista = []
-            if conn:
-                try:
-                    cur = conn.cursor()
-                    cur.execute("SELECT id_usuario, nombre, email, id_rol FROM usuario ORDER BY id_usuario ASC")
-                    for r in cur.fetchall():
-                        lista.append({"id": r[0], "nombre": r[1], "email": r[2], "id_rol": r[3]})
-                except: pass
-                finally: conn.close()
-            self.responder_json({"usuarios": lista})
+    # 1. MAPA
+    if self.path == '/api/v1/mediciones':
+        datos = []
+        if conn:
+            try:
+                cur = conn.cursor()
+                sql = """
+                    SELECT d.temperatura, d.salinidad, d.corriente_u, d.corriente_v, d.nivel_mar, 
+                           z.latitud_centro, z.longitud_centro, b.clorofila, b.oxigeno_disuelto
+                    FROM datos_fisicos d
+                    JOIN zona_marina z ON d.id_zona = z.id_zona
+                    LEFT JOIN datos_bio b ON d.id_zona = b.id_zona 
+                       AND d.fecha_medicion = b.fecha_medicion
+                    ORDER BY d.fecha_medicion DESC
+                    LIMIT 100
+                """
+                cur.execute(sql)
+                for r in cur.fetchall():
+                    u, v = float(r[2] or 0), float(r[3] or 0)
+                    datos.append({
+                        "coords": {"lat": float(r[5]), "lng": float(r[6])},
+                        "temperatura": float(r[0]),
+                        "salinidad": float(r[1]),
+                        "velocidad": round((u**2 + v**2) ** 0.5, 2),
+                        "altura": float(r[4] or 0),
+                        "clorofila": float(r[7]) if r[7] else 0.0,
+                        "oxigeno": float(r[8]) if r[8] else 0.0
+                    })
+            except Exception as e:
+                print(e)
+            finally:
+                conn.close()
 
-        # Archivos estáticos
-        else:
-            if self.path == '/': self.path = '/index.html'
-            try: super().do_GET()
-            except: pass
+        return self.responder_json({"datos": datos})
+
+    # 2. BITÁCORA
+    elif self.path == '/api/v1/bitacora-completa':
+        respuesta = {"fisicos": [], "biologicos": []}
+        if conn:
+            try:
+                cur = conn.cursor()
+                cur.execute("""
+                    SELECT fecha_medicion, temperatura, salinidad,
+                           corriente_u, corriente_v, nivel_mar
+                    FROM datos_fisicos
+                    ORDER BY fecha_medicion DESC
+                    LIMIT 20
+                """)
+                for r in cur.fetchall():
+                    respuesta["fisicos"].append({
+                        "fecha": r[0], "temp": r[1],
+                        "salinidad": r[2], "u": r[3],
+                        "v": r[4], "nivel_mar": r[5]
+                    })
+
+                cur.execute("""
+                    SELECT fecha_medicion, clorofila, oxigeno_disuelto
+                    FROM datos_bio
+                    ORDER BY fecha_medicion DESC
+                    LIMIT 20
+                """)
+                for r in cur.fetchall():
+                    respuesta["biologicos"].append({
+                        "fecha": r[0],
+                        "clorofila": r[1],
+                        "oxigeno": r[2]
+                    })
+            except Exception as e:
+                print(e)
+            finally:
+                conn.close()
+
+        return self.responder_json(respuesta)
+
+    # 3. USUARIOS
+    elif self.path == '/api/v1/usuarios':
+        lista = []
+        if conn:
+            try:
+                cur = conn.cursor()
+                cur.execute("""
+                    SELECT id_usuario, nombre, email, id_rol
+                    FROM usuario
+                    ORDER BY id_usuario ASC
+                """)
+                for r in cur.fetchall():
+                    lista.append({
+                        "id": r[0], "nombre": r[1],
+                        "email": r[2], "id_rol": r[3]
+                    })
+            except Exception as e:
+                print(e)
+            finally:
+                conn.close()
+
+        return self.responder_json({"usuarios": lista})
+
+    # --- RUTA NO ENCONTRADA ---
+    self.send_error(404, "Ruta no encontrada")
+
 
     def do_POST(self):
         try:
