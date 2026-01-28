@@ -3,11 +3,11 @@ import socketserver
 import json
 import psycopg2
 import math
-import re
 import os
 
 # --- CONFIGURACIÓN ---
 PUERTO = int(os.environ.get("PORT", 3000))
+
 DB_CONFIG = { 
     "dbname": "railway",
     "user": "postgres",
@@ -15,9 +15,6 @@ DB_CONFIG = {
     "host": "nozomi.proxy.rlwy.net",
     "port": "23725"
 }
-
-
-PUERTO = int(os.environ.get("PORT", 3000))
 
 class GeoChileHandler(http.server.SimpleHTTPRequestHandler):
 
@@ -34,8 +31,13 @@ class GeoChileHandler(http.server.SimpleHTTPRequestHandler):
         self.send_header("Access-Control-Allow-Origin", "*")
         self.end_headers()
         self.wfile.write(json.dumps(data, default=str).encode("utf-8"))
-    
+
+    # ======================
+    # GET
+    # ======================
     def do_GET(self):
+
+        # Archivos estáticos
         if self.path == "/" or self.path.endswith((".html", ".css", ".js", ".png", ".jpg", ".ico")):
             if self.path == "/":
                 self.path = "/index.html"
@@ -43,47 +45,55 @@ class GeoChileHandler(http.server.SimpleHTTPRequestHandler):
 
         conn = self.obtener_conexion()
 
+        # MAPA
         if self.path == "/api/v1/mediciones":
             datos = []
+
             if conn:
-                cur = conn.cursor()
-                sql = """
-                    SELECT d.temperatura, d.salinidad, d.corriente_u, d.corriente_v, d.nivel_mar, 
-                           z.latitud_centro, z.longitud_centro, b.clorofila, b.oxigeno_disuelto
-                    FROM datos_fisicos d
-                    JOIN zona_marina z ON d.id_zona = z.id_zona
-                    LEFT JOIN datos_bio b ON d.id_zona = b.id_zona 
-                       AND d.fecha_medicion = b.fecha_medicion
-                    ORDER BY d.fecha_medicion DESC
-                    LIMIT 100
-                """
-                cur.execute("spl")
-                for r in cur.fetchall():
-                    u, v = float(r[2] or 0), float(r[3] or 0)
-                    datos.append({
-                        "coords": {"lat": float(r[5]), "lng": float(r[6])},
-                        "temperatura": float(r[0]),
-                        "salinidad": float(r[1]),
-                        "velocidad": round((u**2 + v**2) ** 0.5, 2),
-                        "altura": float(r[4] or 0),
-                        "clorofila": float(r[7]) if r[7] else 0.0,
-                        "oxigeno": float(r[8]) if r[8] else 0.0
-                    })
+                try:
+                    cur = conn.cursor()
+                    cur.execute("""
+                        SELECT d.temperatura, d.salinidad,
+                               d.corriente_u, d.corriente_v,
+                               z.latitud_centro, z.longitud_centro
+                        FROM datos_fisicos d
+                        JOIN zona_marina z ON d.id_zona = z.id_zona
+                        ORDER BY d.fecha_medicion DESC
+                        LIMIT 100
+                    """)
+
+                    for r in cur.fetchall():
+                        u, v = float(r[2] or 0), float(r[3] or 0)
+                        datos.append({
+                            "coords": {"lat": float(r[4]), "lng": float(r[5])},
+                            "temperatura": float(r[0]),
+                            "salinidad": float(r[1]),
+                            "velocidad": round(math.sqrt(u*u + v*v), 2)
+                        })
                 except Exception as e:
-                print(e)    
-                conn.close()
+                    print("❌ Error mediciones:", e)
+                finally:
+                    conn.close()
+
             return self.responder_json({"datos": datos})
 
-        self.send_error(404)
-    
+        self.send_error(404, "Ruta no encontrada")
+
+    # ======================
+    # POST
+    # ======================
     def do_POST(self):
         try:
             length = int(self.headers.get("Content-Length", 0))
-            body = json.loads(self.rfile.read(length).decode("utf-8"))
+            body = json.loads(self.rfile.read(length).decode("utf-8")) if length else {}
 
             conn = self.obtener_conexion()
 
+            # LOGIN
             if self.path == "/api/v1/auth/login":
+                if not conn:
+                    return self.responder_json({"exito": False})
+
                 cur = conn.cursor()
                 cur.execute(
                     "SELECT password, id_rol FROM usuario WHERE email=%s",
@@ -92,68 +102,59 @@ class GeoChileHandler(http.server.SimpleHTTPRequestHandler):
                 user = cur.fetchone()
                 conn.close()
 
-                if not user:
-                    return self.responder_json({"exito": False})
-
-                if body.get("password") != user[0]:
+                if not user or body.get("password") != user[0]:
                     return self.responder_json({"exito": False})
 
                 return self.responder_json({"exito": True})
-                    # CONSULTA POR PUNTO (SONDA VIRTUAL)
-            elif self.path == '/api/v1/consulta-punto':
+
+            # CONSULTA POR PUNTO
+            elif self.path == "/api/v1/consulta-punto":
                 if not conn:
-                 self.responder_json({"encontrado": False})
-                return
+                    return self.responder_json({"encontrado": False})
 
-            lat = body.get('lat')
-            lng = body.get('lng')
+                lat = body.get("lat")
+                lng = body.get("lng")
 
-            if lat is None or lng is None:
-                self.responder_json({"encontrado": False})
-                return
+                if lat is None or lng is None:
+                    return self.responder_json({"encontrado": False})
 
-            try:
-                cur = conn.cursor()
-                cur.execute("""
-                    SELECT 
-                        d.temperatura,
-                        d.salinidad,
-                        d.corriente_u,
-                        d.corriente_v,
-                        z.latitud_centro,
-                        z.longitud_centro
-                    FROM datos_fisicos d
-                    JOIN zona_marina z ON d.id_zona = z.id_zona
-                    ORDER BY
-                        POWER(z.latitud_centro - %s, 2) +
-                        POWER(z.longitud_centro - %s, 2)
-                    ASC
-                    LIMIT 1
-                """, (lat, lng))
+                try:
+                    cur = conn.cursor()
+                    cur.execute("""
+                        SELECT d.temperatura, d.salinidad,
+                               d.corriente_u, d.corriente_v,
+                               z.latitud_centro, z.longitud_centro
+                        FROM datos_fisicos d
+                        JOIN zona_marina z ON d.id_zona = z.id_zona
+                        ORDER BY
+                            POWER(z.latitud_centro - %s, 2) +
+                            POWER(z.longitud_centro - %s, 2)
+                        ASC
+                        LIMIT 1
+                    """, (lat, lng))
 
-                r = cur.fetchone()
-                conn.close()
+                    r = cur.fetchone()
+                    conn.close()
 
-                if not r:
-                    self.responder_json({"encontrado": False})
-                    return
+                    if not r:
+                        return self.responder_json({"encontrado": False})
 
-                u, v = float(r[2] or 0), float(r[3] or 0)
+                    u, v = float(r[2] or 0), float(r[3] or 0)
 
-                self.responder_json({
-                    "encontrado": True,
-                    "datos": {
-                        "temperatura": float(r[0]),
-                        "salinidad": float(r[1]),
-                        "velocidad": round((u**2 + v**2) ** 0.5, 2),
-                        "lat": float(r[4]),
-                        "lng": float(r[5])
-                    }
-                })
-            except Exception as e:
-                print("❌ Error consulta punto:", e)
-                self.responder_json({"encontrado": False})
+                    return self.responder_json({
+                        "encontrado": True,
+                        "datos": {
+                            "temperatura": float(r[0]),
+                            "salinidad": float(r[1]),
+                            "velocidad": round(math.sqrt(u*u + v*v), 2),
+                            "lat": float(r[4]),
+                            "lng": float(r[5])
+                        }
+                    })
 
+                except Exception as e:
+                    print("❌ Error consulta punto:", e)
+                    return self.responder_json({"encontrado": False})
 
             self.send_error(404)
 
