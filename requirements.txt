@@ -1,0 +1,11 @@
+# Librerías para Ciencia de Datos y Copernicus
+xarray
+netCDF4
+pandas
+numpy
+
+# Librerías para Base de Datos
+psycopg2-binary
+
+# Librerías de utilidad
+python-dotenv

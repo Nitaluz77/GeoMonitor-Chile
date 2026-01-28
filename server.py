@@ -4,9 +4,10 @@ import json
 import psycopg2
 import math
 import re
+import os
 
 # --- CONFIGURACIÓN ---
-PUERTO = 3000
+PUERTO = int(os.environ.get("PORT", 3000))
 DB_CONFIG = { 
     "dbname": "railway",
     "user": "postgres",
@@ -168,7 +169,11 @@ class GeoChileHandler(http.server.SimpleHTTPRequestHandler):
                 conn.close()
 
 if __name__ == "__main__":
+    import os
     socketserver.TCPServer.allow_reuse_address = True
-    server = socketserver.TCPServer(("", PUERTO), GeoChileHandler)
+
+    PUERTO = int(os.environ.get("PORT", 3000))
+
+    server = socketserver.TCPServer(("0.0.0.0", PUERTO), GeoChileHandler)
     print(f"✅ SERVIDOR LISTO EN PUERTO {PUERTO}")
     server.serve_forever()
