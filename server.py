@@ -16,35 +16,36 @@ DB_CONFIG = {
     "port": "23725"
 }
 
+
+PUERTO = int(os.environ.get("PORT", 3000))
+
 class GeoChileHandler(http.server.SimpleHTTPRequestHandler):
-    
+
     def obtener_conexion(self):
-        try: return psycopg2.connect(**DB_CONFIG)
-        except Exception as e: print(f"❌ DB Error: {e}"); return None
+        try:
+            return psycopg2.connect(**DB_CONFIG)
+        except Exception as e:
+            print("❌ DB Error:", e)
+            return None
 
     def responder_json(self, data, status=200):
         self.send_response(status)
-        self.send_header('Content-type', 'application/json')
-        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Access-Control-Allow-Origin", "*")
         self.end_headers()
-        self.wfile.write(json.dumps(data, default=str).encode('utf-8'))
+        self.wfile.write(json.dumps(data, default=str).encode("utf-8"))
+    
+    def do_GET(self):
+        if self.path == "/" or self.path.endswith((".html", ".css", ".js", ".png", ".jpg", ".ico")):
+            if self.path == "/":
+                self.path = "/index.html"
+            return super().do_GET()
 
-def do_GET(self):
+        conn = self.obtener_conexion()
 
-    # --- ARCHIVOS ESTÁTICOS ---
-    if self.path == '/' or self.path.endswith(('.html', '.css', '.js', '.png', '.jpg', '.ico')):
-        if self.path == '/':
-            self.path = '/index.html'
-        return super().do_GET()
-
-    # --- DESDE AQUÍ ES API ---
-    conn = self.obtener_conexion()
-
-    # 1. MAPA
-    if self.path == '/api/v1/mediciones':
-        datos = []
-        if conn:
-            try:
+        if self.path == "/api/v1/mediciones":
+            datos = []
+            if conn:
                 cur = conn.cursor()
                 sql = """
                     SELECT d.temperatura, d.salinidad, d.corriente_u, d.corriente_v, d.nivel_mar, 
@@ -56,7 +57,7 @@ def do_GET(self):
                     ORDER BY d.fecha_medicion DESC
                     LIMIT 100
                 """
-                cur.execute(sql)
+                cur.execute("spl")
                 for r in cur.fetchall():
                     u, v = float(r[2] or 0), float(r[3] or 0)
                     datos.append({
@@ -68,173 +69,101 @@ def do_GET(self):
                         "clorofila": float(r[7]) if r[7] else 0.0,
                         "oxigeno": float(r[8]) if r[8] else 0.0
                     })
-            except Exception as e:
-                print(e)
-            finally:
+                except Exception as e:
+                print(e)    
+                conn.close()
+            return self.responder_json({"datos": datos})
+
+        self.send_error(404)
+    
+    def do_POST(self):
+        try:
+            length = int(self.headers.get("Content-Length", 0))
+            body = json.loads(self.rfile.read(length).decode("utf-8"))
+
+            conn = self.obtener_conexion()
+
+            if self.path == "/api/v1/auth/login":
+                cur = conn.cursor()
+                cur.execute(
+                    "SELECT password, id_rol FROM usuario WHERE email=%s",
+                    (body.get("email"),)
+                )
+                user = cur.fetchone()
                 conn.close()
 
-        return self.responder_json({"datos": datos})
+                if not user:
+                    return self.responder_json({"exito": False})
 
-    # 2. BITÁCORA
-    elif self.path == '/api/v1/bitacora-completa':
-        respuesta = {"fisicos": [], "biologicos": []}
-        if conn:
+                if body.get("password") != user[0]:
+                    return self.responder_json({"exito": False})
+
+                return self.responder_json({"exito": True})
+                    # CONSULTA POR PUNTO (SONDA VIRTUAL)
+            elif self.path == '/api/v1/consulta-punto':
+                if not conn:
+                 self.responder_json({"encontrado": False})
+                return
+
+            lat = body.get('lat')
+            lng = body.get('lng')
+
+            if lat is None or lng is None:
+                self.responder_json({"encontrado": False})
+                return
+
             try:
                 cur = conn.cursor()
                 cur.execute("""
-                    SELECT fecha_medicion, temperatura, salinidad,
-                           corriente_u, corriente_v, nivel_mar
-                    FROM datos_fisicos
-                    ORDER BY fecha_medicion DESC
-                    LIMIT 20
-                """)
-                for r in cur.fetchall():
-                    respuesta["fisicos"].append({
-                        "fecha": r[0], "temp": r[1],
-                        "salinidad": r[2], "u": r[3],
-                        "v": r[4], "nivel_mar": r[5]
-                    })
+                    SELECT 
+                        d.temperatura,
+                        d.salinidad,
+                        d.corriente_u,
+                        d.corriente_v,
+                        z.latitud_centro,
+                        z.longitud_centro
+                    FROM datos_fisicos d
+                    JOIN zona_marina z ON d.id_zona = z.id_zona
+                    ORDER BY
+                        POWER(z.latitud_centro - %s, 2) +
+                        POWER(z.longitud_centro - %s, 2)
+                    ASC
+                    LIMIT 1
+                """, (lat, lng))
 
-                cur.execute("""
-                    SELECT fecha_medicion, clorofila, oxigeno_disuelto
-                    FROM datos_bio
-                    ORDER BY fecha_medicion DESC
-                    LIMIT 20
-                """)
-                for r in cur.fetchall():
-                    respuesta["biologicos"].append({
-                        "fecha": r[0],
-                        "clorofila": r[1],
-                        "oxigeno": r[2]
-                    })
-            except Exception as e:
-                print(e)
-            finally:
+                r = cur.fetchone()
                 conn.close()
 
-        return self.responder_json(respuesta)
+                if not r:
+                    self.responder_json({"encontrado": False})
+                    return
 
-    # 3. USUARIOS
-    elif self.path == '/api/v1/usuarios':
-        lista = []
-        if conn:
-            try:
-                cur = conn.cursor()
-                cur.execute("""
-                    SELECT id_usuario, nombre, email, id_rol
-                    FROM usuario
-                    ORDER BY id_usuario ASC
-                """)
-                for r in cur.fetchall():
-                    lista.append({
-                        "id": r[0], "nombre": r[1],
-                        "email": r[2], "id_rol": r[3]
-                    })
+                u, v = float(r[2] or 0), float(r[3] or 0)
+
+                self.responder_json({
+                    "encontrado": True,
+                    "datos": {
+                        "temperatura": float(r[0]),
+                        "salinidad": float(r[1]),
+                        "velocidad": round((u**2 + v**2) ** 0.5, 2),
+                        "lat": float(r[4]),
+                        "lng": float(r[5])
+                    }
+                })
             except Exception as e:
-                print(e)
-            finally:
-                conn.close()
-
-        return self.responder_json({"usuarios": lista})
-
-    # --- RUTA NO ENCONTRADA ---
-    self.send_error(404, "Ruta no encontrada")
+                print("❌ Error consulta punto:", e)
+                self.responder_json({"encontrado": False})
 
 
-def do_POST(self):
-    try:
-        length = int(self.headers.get('Content-Length', 0))
-        raw_body = self.rfile.read(length).decode('utf-8')
-        body = json.loads(raw_body) if raw_body else {}
+            self.send_error(404)
 
-        conn = self.obtener_conexion()
+        except Exception as e:
+            print("🔥 ERROR:", e)
+            self.responder_json({"error": "Servidor"}, 500)
 
-        # LOGIN        
-        if self.path == '/api/v1/auth/login':
-            if not conn:
-                self.responder_json({"exito": False, "error": "DB no disponible"})
-                return
-
-            cur = conn.cursor()
-            cur.execute(
-                "SELECT password, id_rol FROM usuario WHERE email=%s",
-                (body.get('email'),)
-            )
-            user = cur.fetchone()
-            conn.close()
-
-            if not user:
-                self.responder_json({"exito": False})
-                return
-
-            password_db, id_rol = user
-
-            if str(body.get('password')) != str(password_db):
-                self.responder_json({"exito": False})
-                return
-
-            roles = {
-                1: "Admin",
-                2: "Investigador",
-                3: "Lector"
-            }
-
-            self.responder_json({
-                "exito": True,
-                "rol": roles.get(id_rol, "Invitado")
-            })
-            return
-        
-        # INGRESO MANUAL        
-        elif self.path == '/api/v1/ingreso-manual':
-            if not conn:
-                self.responder_json({"exito": False})
-                return
-
-            cur = conn.cursor()
-            cur.execute("""
-                INSERT INTO datos_fisicos
-                (temperatura, salinidad, corriente_u, corriente_v, nivel_mar, id_zona, fecha_medicion)
-                VALUES (%s,%s,%s,%s,%s,1,NOW())
-            """, (
-                body.get('temperatura'),
-                body.get('salinidad', 0),
-                body.get('u', 0),
-                body.get('v', 0),
-                body.get('altura', 0)
-            ))
-
-            if body.get('clorofila') is not None:
-                cur.execute("""
-                    INSERT INTO datos_bio
-                    (clorofila, oxigeno_disuelto, id_zona, fecha_medicion)
-                    VALUES (%s,%s,1,NOW())
-                """, (
-                    body.get('clorofila'),
-                    body.get('oxigeno', 0)
-                ))
-
-            conn.commit()
-            conn.close()
-            self.responder_json({"exito": True})
-            return
-        
-        # RUTA NO SOPORTADA        
-        else:
-            self.send_response(404)
-            self.end_headers()
-
-    except Exception as e:
-        print("🔥 ERROR do_POST:", e)
-        self.responder_json({"exito": False, "error": "Error servidor"})
 
 if __name__ == "__main__":
-    import os
     socketserver.TCPServer.allow_reuse_address = True
-
-    PUERTO = int(os.environ.get("PORT", 3000))
-    os.chdir(os.path.dirname(os.path.abspath(__file__)))
-
     server = socketserver.TCPServer(("0.0.0.0", PUERTO), GeoChileHandler)
     print(f"✅ SERVIDOR LISTO EN PUERTO {PUERTO}")
     server.serve_forever()

@@ -57,7 +57,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
 function cargarDatos() {
     // 1. Cambio a buscar en mapa.php
-    console.log("Solicitando datos a: mapa.php"); 
+    console.log("Solicitando datos a: /api/v1/mediciones");
     
     fetch('/api/v1/mediciones')
         .then(response => {
@@ -232,60 +232,41 @@ function guardarDatosManuales() {
 function loginReal() {
     const email = prompt("📧 Correo:", "admin@geochile.cl");
     if (!email) return;
-    const password = prompt("🔑 Contraseña:", "1234"); 
+
+    const password = prompt("🔑 Contraseña:", "1234");
     if (!password) return;
 
-    // Ajuste de sintaxis en el fetch
     fetch('/api/v1/auth/login', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password })
-})
-    }
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+    })
     .then(res => {
-        // Si el servidor responde con error (404, 500), lanzamos una alerta técnica
-        if (!res.ok) throw new Error("El servidor respondió con un error (HTML). Revisa login.php");
+        if (!res.ok) {
+            throw new Error("Servidor respondió con HTML o error");
+        }
         return res.json();
     })
     .then(data => {
-        // IMPORTANTE: Verifica si en PHP usas 'exito' o 'success'
-        if (data.exito) { 
-            alert(`🔓 Hola, tu rol es: ${data.rol}`);
-            // Aquí puedes activar tus paneles
-            if (typeof aplicarPermisos === "function") aplicarPermisos(data.rol);
+        if (data.exito) {
+            alert(`🔓 Bienvenido (${data.rol})`);
+            rolUsuario = data.rol;
+            aplicarPermisos(data.rol);
         } else {
-            alert("❌ Credenciales incorrectas: " + (data.error || ""));
+            alert("❌ Credenciales incorrectas");
         }
     })
     .catch(err => {
-        console.error("Detalle del error:", err);
-        alert("Error de conexión: Asegúrate de que login.php existe y no tiene errores.");
+        console.error("Error login:", err);
+        alert("❌ Error de conexión con el servidor");
     });
 }
+
 
 function cerrarSesion() {
     if(confirm("¿Cerrar sesión?")) window.location.reload();
 }
 
-function aplicarPermisos(rol) {
-        
-    const panelBotones = document.getElementById('panel-botones');
-    const panelUsuario = document.getElementById('panel-usuario');
-    const lblUsuario = document.getElementById('lbl-usuario');
-    
-    if(lblUsuario) lblUsuario.innerText = rol;
-    if(panelBotones) panelBotones.style.display = 'none';
-    if(panelUsuario) panelUsuario.style.display = 'flex';
-
-    const btnIngreso = document.getElementById('btn-ingreso');
-    if (btnIngreso) {
-        btnIngreso.style.display = (rol === 'Lector') ? 'none' : 'block';
-    }
-
-    if (rol === 'Admin') {
-    const btnAdmin = document.getElementById('btn-admin-users');
-    if (btnAdmin) btnAdmin.style.display = 'block';
-}
 
 function aplicarPermisos(rol) {
 
