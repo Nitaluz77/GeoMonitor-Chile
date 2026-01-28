@@ -173,6 +173,7 @@ if __name__ == "__main__":
     socketserver.TCPServer.allow_reuse_address = True
 
     PUERTO = int(os.environ.get("PORT", 3000))
+    os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
     server = socketserver.TCPServer(("0.0.0.0", PUERTO), GeoChileHandler)
     print(f"✅ SERVIDOR LISTO EN PUERTO {PUERTO}")
