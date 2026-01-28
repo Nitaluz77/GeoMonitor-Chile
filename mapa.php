@@ -1,4 +1,10 @@
 <?php
+// Conecta a la base de datos
+require_once __DIR__ . '/config/db.php'; 
+
+//Avisa al navegador que enviaremos datos
+header('Content-Type: application/json');
+
 session_start();
 include('db.php');
 if (!isset($_SESSION['perfil'])) { header("Location: index.php"); }

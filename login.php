@@ -1,4 +1,11 @@
 <?php
+//Conecta a la base de datos
+require_once __DIR__ . '/config/db.php'; 
+
+//Configuraciones para que el mapa no se rompa
+header('Content-Type: application/json');
+ini_set('display_errors', 0);
+
 // 1. Configuraciones de seguridad y formato
 header('Content-Type: application/json');
 ini_set('display_errors', 0); 

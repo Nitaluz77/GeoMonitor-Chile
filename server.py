@@ -149,9 +149,7 @@ def do_POST(self):
 
         conn = self.obtener_conexion()
 
-        # ======================
-        # LOGIN
-        # ======================
+        # LOGIN        
         if self.path == '/api/v1/auth/login':
             if not conn:
                 self.responder_json({"exito": False, "error": "DB no disponible"})
@@ -186,10 +184,8 @@ def do_POST(self):
                 "rol": roles.get(id_rol, "Invitado")
             })
             return
-
-        # ======================
-        # INGRESO MANUAL
-        # ======================
+        
+        # INGRESO MANUAL        
         elif self.path == '/api/v1/ingreso-manual':
             if not conn:
                 self.responder_json({"exito": False})
@@ -222,10 +218,8 @@ def do_POST(self):
             conn.close()
             self.responder_json({"exito": True})
             return
-
-        # ======================
-        # RUTA NO SOPORTADA
-        # ======================
+        
+        # RUTA NO SOPORTADA        
         else:
             self.send_response(404)
             self.end_headers()

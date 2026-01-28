@@ -1,9 +1,7 @@
 /* static/js/main.js */
 console.log('Cargando GeoMonitor Full Stack...');
 
-const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
-    ? 'http://127.0.0.1:5000' 
-    : '';
+const API_URL = '';
 
 // 1. CONFIGURACIÓN DEL MAPA
 const map = L.map('map-container').setView([-36.68, -73.03], 11);
@@ -58,20 +56,29 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 
 function cargarDatos() {
-    console.log(`Solicitando datos a: ${API_URL}/api/v1/mediciones`); 
-
-    fetch(`${API_URL}/api/v1/mediciones`)
-        .then(response => response.json())
+    // 1. Cambio a buscar en mapa.php
+    console.log("Solicitando datos a: mapa.php"); 
+    
+    fetch('mapa.php')
+        .then(response => {
+            // Verifica si la respuesta es correcta antes de procesar
+            if (!response.ok) throw new Error("Error al conectar con mapa.php");
+            return response.json();
+        })
         .then(data => {
             console.log("Datos recibidos:", data); 
-            if(data.datos) {
-                datosCache = data.datos; 
-                pintarMapa('temperatura'); // Capa por defecto
+              
+            if(data.datos || Array.isArray(data)) {
+                datosCache = data.datos ? data.datos : data; 
+                pintarMapa('temperatura'); 
             } else {
-                console.warn("La API respondió pero sin datos.");
+                console.warn("La respuesta no tiene el formato esperado.");
             }
         })
-        .catch(error => console.error('Error al cargar datos:', error));
+        .catch(error => {
+            console.error('Error al cargar datos:', error);
+            alert("No se pudieron cargar los datos del mapa. Revisa la consola.");
+        });
 }
 
 function pintarMapa(modo) {
@@ -228,22 +235,31 @@ function loginReal() {
     const password = prompt("🔑 Contraseña:", "1234"); 
     if (!password) return;
 
-    fetch(`${API_URL}/api/v1/auth/login`, {
+    // Ajuste de sintaxis en el fetch
+    fetch('login.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
     })
-    .then(res => res.json())
+    .then(res => {
+        // Si el servidor responde con error (404, 500), lanzamos una alerta técnica
+        if (!res.ok) throw new Error("El servidor respondió con un error (HTML). Revisa login.php");
+        return res.json();
+    })
     .then(data => {
-        if (data.exito) {
-            rolUsuario = data.rol;
-            alert(`🔓 Hola ${data.rol}`);
-            aplicarPermisos(data.rol);
+        // IMPORTANTE: Verifica si en PHP usas 'exito' o 'success'
+        if (data.exito) { 
+            alert(`🔓 Hola, tu rol es: ${data.rol}`);
+            // Aquí puedes activar tus paneles
+            if (typeof aplicarPermisos === "function") aplicarPermisos(data.rol);
         } else {
-            alert("❌ Credenciales incorrectas");
+            alert("❌ Credenciales incorrectas: " + (data.error || ""));
         }
     })
-    .catch(err => alert("Error de servidor: " + err));
+    .catch(err => {
+        console.error("Detalle del error:", err);
+        alert("Error de conexión: Asegúrate de que login.php existe y no tiene errores.");
+    });
 }
 
 function cerrarSesion() {
