@@ -228,11 +228,13 @@ function loginReal() {
     const password = prompt("🔑 Contraseña:", "1234"); 
     if (!password) return;
 
-    fetch(`${API_URL}/api/v1/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email, password: password })
-    })
+    fetch('login.php')
+        .then(res => res.text())
+        .then(data => {
+        console.log("RESPUESTA SERVIDOR:", data);
+  })
+
+
     .then(res => res.json())
     .then(data => {
         if (data.exito) {
@@ -266,17 +268,31 @@ function aplicarPermisos(rol) {
     }
 
     if (rol === 'Admin') {
-        const panelAcciones = document.getElementById('panel-acciones');
-        if (panelAcciones && !document.getElementById('btn-admin-users')) {
-            const btnAdmin = document.createElement('button');
-            btnAdmin.id = 'btn-admin-users'; 
-            btnAdmin.className = 'btn-gris'; 
-            btnAdmin.style.background = '#37474F'; 
-            btnAdmin.style.color = '#fff';
-            btnAdmin.style.marginTop = '5px';
-            btnAdmin.innerHTML = '⚙️ Gestión Usuarios';
-            btnAdmin.onclick = function() { window.location.href = 'admin_usuarios.html'; };
-            panelAcciones.appendChild(btnAdmin);
-        }
+    const btnAdmin = document.getElementById('btn-admin-users');
+    if (btnAdmin) btnAdmin.style.display = 'block';
+}
+
+function aplicarPermisos(rol) {
+
+    const panelBotones = document.getElementById('panel-botones');
+    const panelUsuario = document.getElementById('panel-usuario');
+    const lblUsuario = document.getElementById('lbl-usuario');
+    const btnIngreso = document.getElementById('btn-ingreso');
+    const btnAdmin = document.getElementById('btn-admin-users');
+
+    if (lblUsuario) lblUsuario.innerText = rol;
+    if (panelBotones) panelBotones.style.display = 'none';
+    if (panelUsuario) panelUsuario.style.display = 'flex';
+
+    // Lector no puede ingresar datos
+    if (btnIngreso) {
+        btnIngreso.style.display = (rol === 'Lector') ? 'none' : 'block';
     }
+
+    // SOLO ADMIN ve gestión de usuarios
+    if (btnAdmin) {
+        btnAdmin.style.display = (rol === 'Admin') ? 'block' : 'none';
+    }
+}
+
 }
