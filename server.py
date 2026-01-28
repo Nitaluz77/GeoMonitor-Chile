@@ -143,13 +143,16 @@ def do_GET(self):
 
 def do_POST(self):
     try:
-        content_length = int(self.headers.get('Content-Length', 0))
-        raw_body = self.rfile.read(content_length).decode('utf-8')
+        length = int(self.headers.get('Content-Length', 0))
+        raw_body = self.rfile.read(length).decode('utf-8')
         body = json.loads(raw_body) if raw_body else {}
 
-        # A) LOGIN
+        conn = self.obtener_conexion()
+
+        # ======================
+        # LOGIN
+        # ======================
         if self.path == '/api/v1/auth/login':
-            conn = self.obtener_conexion()
             if not conn:
                 self.responder_json({"exito": False, "error": "DB no disponible"})
                 return
@@ -172,7 +175,11 @@ def do_POST(self):
                 self.responder_json({"exito": False})
                 return
 
-            roles = {1: "Admin", 2: "Investigador", 3: "Lector"}
+            roles = {
+                1: "Admin",
+                2: "Investigador",
+                3: "Lector"
+            }
 
             self.responder_json({
                 "exito": True,
@@ -180,87 +187,52 @@ def do_POST(self):
             })
             return
 
-        # B)INGRESO MANUAL
+        # ======================
+        # INGRESO MANUAL
+        # ======================
         elif self.path == '/api/v1/ingreso-manual':
-            conn = self.obtener_conexion()
             if not conn:
                 self.responder_json({"exito": False})
                 return
 
             cur = conn.cursor()
-            cur.execute(
-                """
-                INSERT INTO datos_fisicos 
+            cur.execute("""
+                INSERT INTO datos_fisicos
                 (temperatura, salinidad, corriente_u, corriente_v, nivel_mar, id_zona, fecha_medicion)
                 VALUES (%s,%s,%s,%s,%s,1,NOW())
-                """,
-                (
-                    body.get('temperatura'),
-                    body.get('salinidad'),
-                    body.get('u'),
-                    body.get('v'),
-                    body.get('altura')
-                )
-            )
+            """, (
+                body.get('temperatura'),
+                body.get('salinidad', 0),
+                body.get('u', 0),
+                body.get('v', 0),
+                body.get('altura', 0)
+            ))
 
-            if body.get('clorofila'):
-                cur.execute(
-                    """
-                    INSERT INTO datos_bio 
+            if body.get('clorofila') is not None:
+                cur.execute("""
+                    INSERT INTO datos_bio
                     (clorofila, oxigeno_disuelto, id_zona, fecha_medicion)
                     VALUES (%s,%s,1,NOW())
-                    """,
-                    (body.get('clorofila'), body.get('oxigeno'))
-                )
+                """, (
+                    body.get('clorofila'),
+                    body.get('oxigeno', 0)
+                ))
 
             conn.commit()
             conn.close()
             self.responder_json({"exito": True})
             return
 
-        # C) CREAR USUARIO
-        elif self.path == '/api/v1/usuarios':
-            conn = self.obtener_conexion()
-            if not conn:
-                self.responder_json({"exito": False})
-                return
-
-            cur = conn.cursor()
-            cur.execute(
-                "INSERT INTO usuario (nombre, email, password, id_rol) VALUES (%s,%s,%s,%s)",
-                (
-                    body.get('nombre'),
-                    body.get('email'),
-                    body.get('password'),
-                    body.get('id_rol')
-                )
-            )
-            conn.commit()
-            conn.close()
-            self.responder_json({"exito": True})
-            return
-
-        # D) RUTA NO EXISTE
-        self.send_response(404)
-        self.end_headers()
+        # ======================
+        # RUTA NO SOPORTADA
+        # ======================
+        else:
+            self.send_response(404)
+            self.end_headers()
 
     except Exception as e:
-        print("ERROR POST:", e)
-        self.responder_json({"exito": False, "error": "Error servidor"}, 500)
-
-    def do_DELETE(self):
-        match = re.search(r'/api/v1/usuarios/(\d+)', self.path)
-        if match:
-            uid = match.group(1)
-            conn = self.obtener_conexion()
-            if conn:
-                cur = conn.cursor()
-                if uid == '1': self.responder_json({"exito": False, "error": "No borrar superadmin"})
-                else:
-                    cur.execute("DELETE FROM usuario WHERE id_usuario=%s", (uid,))
-                    conn.commit()
-                    self.responder_json({"exito": True})
-                conn.close()
+        print("🔥 ERROR do_POST:", e)
+        self.responder_json({"exito": False, "error": "Error servidor"})
 
 if __name__ == "__main__":
     import os
