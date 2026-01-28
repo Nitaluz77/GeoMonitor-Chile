@@ -59,7 +59,7 @@ function cargarDatos() {
     // 1. Cambio a buscar en mapa.php
     console.log("Solicitando datos a: mapa.php"); 
     
-    fetch('mapa.php')
+    fetch('/api/v1/mediciones')
         .then(response => {
             // Verifica si la respuesta es correcta antes de procesar
             if (!response.ok) throw new Error("Error al conectar con mapa.php");
@@ -236,10 +236,11 @@ function loginReal() {
     if (!password) return;
 
     // Ajuste de sintaxis en el fetch
-    fetch('login.php'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
+    fetch('/api/v1/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password })
+})
     }
     .then(res => {
         // Si el servidor responde con error (404, 500), lanzamos una alerta técnica
