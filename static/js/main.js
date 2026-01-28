@@ -236,11 +236,11 @@ function loginReal() {
     if (!password) return;
 
     // Ajuste de sintaxis en el fetch
-    fetch('login.php', {
+    fetch('login.php'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
-    })
+    }
     .then(res => {
         // Si el servidor responde con error (404, 500), lanzamos una alerta técnica
         if (!res.ok) throw new Error("El servidor respondió con un error (HTML). Revisa login.php");
