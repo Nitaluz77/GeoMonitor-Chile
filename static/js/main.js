@@ -270,7 +270,11 @@ function cerrarSesion() {
 
 function aplicarPermisos(rol) {
 
-    console.log("Rol recibido:", rol); 
+    console.log("ROL EXACTO >>>", `"${rol}"`, typeof rol);
+
+     // Normalizar el rol
+    rol = rol.trim();        // elimina espacios invisibles
+    rol = rol.toLowerCase(); // evita problemas con mayúsculas
 
     const panelBotones = document.getElementById('panel-botones');
     const panelUsuario = document.getElementById('panel-usuario');
@@ -279,7 +283,11 @@ function aplicarPermisos(rol) {
     const btnAdmin = document.getElementById('btn-admin-users');
 
     // Mostrar rol
-    if (lblUsuario) lblUsuario.innerText = rol;
+    if (lblUsuario) lblUsuario.innerText = 
+        rol === 'admin' ? 'Admin' :
+        rol === 'investigador' ? 'Investigador' :
+        rol === 'lector' ? 'Lector' :
+        'Invitado';
 
     // Cambiar panel
     if (panelBotones) panelBotones.style.display = 'none';
