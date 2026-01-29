@@ -270,24 +270,33 @@ function cerrarSesion() {
 
 function aplicarPermisos(rol) {
 
+    console.log("Aplicando permisos para rol:", rol, typeof rol);
+
     const panelBotones = document.getElementById('panel-botones');
     const panelUsuario = document.getElementById('panel-usuario');
     const lblUsuario = document.getElementById('lbl-usuario');
     const btnIngreso = document.getElementById('btn-ingreso');
     const btnAdmin = document.getElementById('btn-admin-users');
 
-    if (lblUsuario) lblUsuario.innerText = rol;
+    const rolesTexto = {
+        1: 'Admin',
+        2: 'Investigador',
+        3: 'Lector'
+    };
+
+    if (lblUsuario) lblUsuario.innerText = rolesTexto[rol] || 'Invitado';
     if (panelBotones) panelBotones.style.display = 'none';
     if (panelUsuario) panelUsuario.style.display = 'flex';
 
-    // Lector no puede ingresar datos
+    // LECTOR no puede ingresar datos
     if (btnIngreso) {
-        btnIngreso.style.display = (rol === 'Lector') ? 'none' : 'block';
+        btnIngreso.style.display = (rol === 3) ? 'none' : 'block';
     }
 
     // SOLO ADMIN ve gestión de usuarios
     if (btnAdmin) {
-        btnAdmin.style.display = (rol === 'Admin') ? 'block' : 'none';
+        btnAdmin.style.display = (rol === 1) ? 'block' : 'none';
     }
 }
+
 

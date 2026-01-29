@@ -31,10 +31,8 @@ class GeoChileHandler(http.server.SimpleHTTPRequestHandler):
         self.send_header("Access-Control-Allow-Origin", "*")
         self.end_headers()
         self.wfile.write(json.dumps(data, default=str).encode("utf-8"))
-
-    # ======================
-    # GET
-    # ======================
+    
+    # GET    
     def do_GET(self):
 
         # Archivos estáticos
@@ -78,10 +76,8 @@ class GeoChileHandler(http.server.SimpleHTTPRequestHandler):
             return self.responder_json({"datos": datos})
 
         self.send_error(404, "Ruta no encontrada")
-
-    # ======================
+    
     # POST
-    # ======================
     def do_POST(self):
         try:
             length = int(self.headers.get("Content-Length", 0))
@@ -105,7 +101,10 @@ class GeoChileHandler(http.server.SimpleHTTPRequestHandler):
                 if not user or body.get("password") != user[0]:
                     return self.responder_json({"exito": False})
 
-                return self.responder_json({"exito": True})
+                return self.responder_json({
+                    "exito": True,
+                    "rol": user[1]   # id_rol
+})
 
             # CONSULTA POR PUNTO
             elif self.path == "/api/v1/consulta-punto":
