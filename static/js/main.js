@@ -250,8 +250,8 @@ function loginReal() {
     .then(data => {
         if (data.exito) {
             alert(`🔓 Bienvenido (${data.rol})`);
-            rolUsuario = data.rol;
-            aplicarPermisos(data.rol);
+            rolUsuario = Number(data.rol);
+            aplicarPermisos(Number(data.rol));
         } else {
             alert("❌ Credenciales incorrectas");
         }

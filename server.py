@@ -103,7 +103,8 @@ class GeoChileHandler(http.server.SimpleHTTPRequestHandler):
 
                 return self.responder_json({
                     "exito": True,
-                    "rol": user[1]   # id_rol
+                    "rol": user[1], # id_rol
+                    "rol_texto": roles.get(user[1], "Invitado")  
 })
 
             # CONSULTA POR PUNTO
