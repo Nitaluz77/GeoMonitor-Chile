@@ -79,33 +79,50 @@ class GeoChileHandler(http.server.SimpleHTTPRequestHandler):
     
     # POST
     def do_POST(self):
-        try:
-            length = int(self.headers.get("Content-Length", 0))
-            body = json.loads(self.rfile.read(length).decode("utf-8")) if length else {}
+    try:
+        length = int(self.headers.get("Content-Length", 0))
+        body = json.loads(self.rfile.read(length).decode("utf-8"))
+
+        # LOGIN
+        if self.path == "/api/v1/auth/login":
 
             conn = self.obtener_conexion()
+            if not conn:
+                return self.responder_json(
+                    {"exito": False, "error": "DB no disponible"}, 500
+                )
 
-            # LOGIN
-            if self.path == "/api/v1/auth/login":
-                if not conn:
-                    return self.responder_json({"exito": False})
-
+            try:
                 cur = conn.cursor()
                 cur.execute(
                     "SELECT password, id_rol FROM usuario WHERE email=%s",
                     (body.get("email"),)
                 )
                 user = cur.fetchone()
+            finally:
                 conn.close()
 
-                if not user or body.get("password") != user[0]:
-                    return self.responder_json({"exito": False})
+            if not user:
+                return self.responder_json({"exito": False})
 
-                return self.responder_json({
-                    "exito": True,
-                    "rol": user[1], # id_rol
-                    "rol_texto": roles.get(user[1], "Invitado")  
-})
+            password_db, id_rol = user
+
+            if body.get("password") != password_db:
+                return self.responder_json({"exito": False})
+
+            # RESPUESTA CORRECTA
+            return self.responder_json({
+                "exito": True,
+                "rol": int(id_rol)
+            })
+
+        # RUTA NO IMPLEMENTADA
+        self.send_error(404)
+
+    except Exception as e:
+        print("🔥 ERROR LOGIN:", e)
+        self.responder_json({"error": "Error servidor"}, 500)
+
 
             # CONSULTA POR PUNTO
             elif self.path == "/api/v1/consulta-punto":
