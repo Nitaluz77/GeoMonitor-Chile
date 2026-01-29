@@ -5,7 +5,7 @@ import psycopg2
 import math
 import os
 
-# --- CONFIGURACIÓN ---
+# CONFIGURACIÓN 
 PUERTO = int(os.environ.get("PORT", 3000))
 
 DB_CONFIG = {
@@ -18,8 +18,8 @@ DB_CONFIG = {
 
 
 class GeoChileHandler(http.server.SimpleHTTPRequestHandler):
-    
-    # UTILIDADES    
+
+    # UTILIDADES 
     def obtener_conexion(self):
         try:
             return psycopg2.connect(**DB_CONFIG)
@@ -33,8 +33,8 @@ class GeoChileHandler(http.server.SimpleHTTPRequestHandler):
         self.send_header("Access-Control-Allow-Origin", "*")
         self.end_headers()
         self.wfile.write(json.dumps(data, default=str).encode("utf-8"))
-    
-    # GET    
+
+    # GET
     def do_GET(self):
 
         # Archivos estáticos
@@ -43,10 +43,9 @@ class GeoChileHandler(http.server.SimpleHTTPRequestHandler):
                 self.path = "/index.html"
             return super().do_GET()
 
-        conn = self.obtener_conexion()
-
-        # MAPA
+        # API mediciones
         if self.path == "/api/v1/mediciones":
+            conn = self.obtener_conexion()
             datos = []
 
             if conn:
@@ -78,15 +77,15 @@ class GeoChileHandler(http.server.SimpleHTTPRequestHandler):
             return self.responder_json({"datos": datos})
 
         self.send_error(404, "Ruta no encontrada")
-    
-    # POST    
+
+    # POST
     def do_POST(self):
         try:
             length = int(self.headers.get("Content-Length", 0))
             raw = self.rfile.read(length).decode("utf-8")
             body = json.loads(raw) if raw else {}
 
-            # LOGIN 
+            # ---------- LOGIN ----------
             if self.path == "/api/v1/auth/login":
                 conn = self.obtener_conexion()
                 if not conn:
@@ -95,7 +94,7 @@ class GeoChileHandler(http.server.SimpleHTTPRequestHandler):
                 try:
                     cur = conn.cursor()
                     cur.execute("""
-                        SELECT u.password, r.nombre
+                        SELECT u.password, r.nombre_rol
                         FROM usuario u
                         JOIN rol r ON u.id_rol = r.id_rol
                         WHERE u.email = %s
@@ -114,10 +113,10 @@ class GeoChileHandler(http.server.SimpleHTTPRequestHandler):
 
                 return self.responder_json({
                     "exito": True,
-                    "rol": nombre_rol  # admin / investigador7 / lector
+                    "rol": nombre_rol
                 })
 
-            # CONSULTA POR PUNTO 
+            # CONSULTA POR PUNTO
             elif self.path == "/api/v1/consulta-punto":
                 conn = self.obtener_conexion()
                 if not conn:
@@ -143,7 +142,6 @@ class GeoChileHandler(http.server.SimpleHTTPRequestHandler):
                         ASC
                         LIMIT 1
                     """, (lat, lng))
-
                     r = cur.fetchone()
                 finally:
                     conn.close()
@@ -172,9 +170,10 @@ class GeoChileHandler(http.server.SimpleHTTPRequestHandler):
             self.responder_json({"error": "Servidor"}, 500)
 
 
-# SERVIDOR
+# SERVIDOR 
 if __name__ == "__main__":
     socketserver.TCPServer.allow_reuse_address = True
     server = socketserver.TCPServer(("0.0.0.0", PUERTO), GeoChileHandler)
     print(f"✅ SERVIDOR LISTO EN PUERTO {PUERTO}")
     server.serve_forever()
+
