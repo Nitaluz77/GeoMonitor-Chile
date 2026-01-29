@@ -8,7 +8,7 @@ import os
 # --- CONFIGURACIÓN ---
 PUERTO = int(os.environ.get("PORT", 3000))
 
-DB_CONFIG = { 
+DB_CONFIG = {
     "dbname": "railway",
     "user": "postgres",
     "password": "KEkNqLjIOIcOExyUYAoHjIEtyCzHpZAM",
@@ -16,8 +16,10 @@ DB_CONFIG = {
     "port": "23725"
 }
 
-class GeoChileHandler(http.server.SimpleHTTPRequestHandler):
 
+class GeoChileHandler(http.server.SimpleHTTPRequestHandler):
+    
+    # UTILIDADES    
     def obtener_conexion(self):
         try:
             return psycopg2.connect(**DB_CONFIG)
@@ -77,55 +79,47 @@ class GeoChileHandler(http.server.SimpleHTTPRequestHandler):
 
         self.send_error(404, "Ruta no encontrada")
     
-    # POST
+    # POST    
     def do_POST(self):
-    try:
-        length = int(self.headers.get("Content-Length", 0))
-        body = json.loads(self.rfile.read(length).decode("utf-8"))
+        try:
+            length = int(self.headers.get("Content-Length", 0))
+            raw = self.rfile.read(length).decode("utf-8")
+            body = json.loads(raw) if raw else {}
 
-        # LOGIN
-        if self.path == "/api/v1/auth/login":
+            # LOGIN 
+            if self.path == "/api/v1/auth/login":
+                conn = self.obtener_conexion()
+                if not conn:
+                    return self.responder_json({"exito": False}, 500)
 
-            conn = self.obtener_conexion()
-            if not conn:
-                return self.responder_json(
-                    {"exito": False, "error": "DB no disponible"}, 500
-                )
+                try:
+                    cur = conn.cursor()
+                    cur.execute("""
+                        SELECT u.password, r.nombre
+                        FROM usuario u
+                        JOIN rol r ON u.id_rol = r.id_rol
+                        WHERE u.email = %s
+                    """, (body.get("email"),))
+                    user = cur.fetchone()
+                finally:
+                    conn.close()
 
-            try:
-                cur = conn.cursor()
-                cur.execute(
-                    "SELECT password, id_rol FROM usuario WHERE email=%s",
-                    (body.get("email"),)
-                )
-                user = cur.fetchone()
-            finally:
-                conn.close()
+                if not user:
+                    return self.responder_json({"exito": False})
 
-            if not user:
-                return self.responder_json({"exito": False})
+                password_db, nombre_rol = user
 
-            password_db, id_rol = user
+                if body.get("password") != password_db:
+                    return self.responder_json({"exito": False})
 
-            if body.get("password") != password_db:
-                return self.responder_json({"exito": False})
+                return self.responder_json({
+                    "exito": True,
+                    "rol": nombre_rol  # admin / investigador7 / lector
+                })
 
-            # RESPUESTA CORRECTA
-            return self.responder_json({
-                "exito": True,
-                "rol": int(id_rol)
-            })
-
-        # RUTA NO IMPLEMENTADA
-        self.send_error(404)
-
-    except Exception as e:
-        print("🔥 ERROR LOGIN:", e)
-        self.responder_json({"error": "Error servidor"}, 500)
-
-
-            # CONSULTA POR PUNTO
+            # CONSULTA POR PUNTO 
             elif self.path == "/api/v1/consulta-punto":
+                conn = self.obtener_conexion()
                 if not conn:
                     return self.responder_json({"encontrado": False})
 
@@ -151,35 +145,34 @@ class GeoChileHandler(http.server.SimpleHTTPRequestHandler):
                     """, (lat, lng))
 
                     r = cur.fetchone()
+                finally:
                     conn.close()
 
-                    if not r:
-                        return self.responder_json({"encontrado": False})
-
-                    u, v = float(r[2] or 0), float(r[3] or 0)
-
-                    return self.responder_json({
-                        "encontrado": True,
-                        "datos": {
-                            "temperatura": float(r[0]),
-                            "salinidad": float(r[1]),
-                            "velocidad": round(math.sqrt(u*u + v*v), 2),
-                            "lat": float(r[4]),
-                            "lng": float(r[5])
-                        }
-                    })
-
-                except Exception as e:
-                    print("❌ Error consulta punto:", e)
+                if not r:
                     return self.responder_json({"encontrado": False})
 
-            self.send_error(404)
+                u, v = float(r[2] or 0), float(r[3] or 0)
+
+                return self.responder_json({
+                    "encontrado": True,
+                    "datos": {
+                        "temperatura": float(r[0]),
+                        "salinidad": float(r[1]),
+                        "velocidad": round(math.sqrt(u*u + v*v), 2),
+                        "lat": float(r[4]),
+                        "lng": float(r[5])
+                    }
+                })
+
+            else:
+                self.send_error(404)
 
         except Exception as e:
-            print("🔥 ERROR:", e)
+            print("🔥 ERROR do_POST:", e)
             self.responder_json({"error": "Servidor"}, 500)
 
 
+# SERVIDOR
 if __name__ == "__main__":
     socketserver.TCPServer.allow_reuse_address = True
     server = socketserver.TCPServer(("0.0.0.0", PUERTO), GeoChileHandler)
