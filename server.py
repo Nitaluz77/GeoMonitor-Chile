@@ -85,7 +85,7 @@ class GeoChileHandler(http.server.SimpleHTTPRequestHandler):
             raw = self.rfile.read(length).decode("utf-8")
             body = json.loads(raw) if raw else {}
 
-            # ---------- LOGIN ----------
+            #LOGIN 
             if self.path == "/api/v1/auth/login":
                 conn = self.obtener_conexion()
                 if not conn:

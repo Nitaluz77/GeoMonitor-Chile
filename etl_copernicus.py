@@ -6,6 +6,7 @@ import sys
 import math
 from datetime import date
 
+
 # 1. CONFIGURACIÓN
 USER_COP = "nitaluz77@hotmail.com"
 PASS_COP = "CamilaCata1@"
@@ -19,7 +20,8 @@ DB_CONFIG = {
 }
 
 PRODUCT_PHY = "cmems_mod_glo_phy_anfc_0.083deg_P1D-m"
-PRODUCT_BIO = "cmems_mod_glo_bgc_anfc_0.25deg_P1D-m"
+PRODUCT_BIO = "cmems_mod_glo_bgc-nut_anfc_0.25deg_P1D-m"
+
 
 # 2. RED DE MONITOREO NACIONAL (Calibrada mar adentro para satélite de 0.25°)
 ZONAS = [
@@ -61,8 +63,9 @@ def procesar_oceanografia():
     # Fecha para la FÍSICA (Hoy)
     hoy_str = date.today().strftime("%Y-%m-%dT00:00:00")
     
-    # Fecha para la BIOLOGÍA (Ayer, para evitar el desfase de procesamiento del satélite)
-    ayer_str = (date.today() - timedelta(days=1)).strftime("%Y-%m-%dT00:00:00")
+    # BIOLÓGICA → última fecha válida
+    DATA_MAX = "2025-11-30T00:00:00"
+    ayer_str = DATA_MAX
 
     PROF_EXACTA = 0.4940253794193268
     for zona in ZONAS:
@@ -79,7 +82,7 @@ def procesar_oceanografia():
                 minimum_depth=PROF_EXACTA, maximum_depth=PROF_EXACTA,
                 raise_if_updating=True, disable_progress_bar=True,
                 output_filename="phy.nc",
-                username=USER_COP, password=PASS_COP
+                username=USER_COP, password=PASS_COP,                
             )
             
             ds_phy = xr.open_dataset("phy.nc").load()
@@ -106,16 +109,16 @@ def procesar_oceanografia():
 
             # --- FASE B: BIOLÓGICA (CAJA DE 50KM) ---
             print("   🧬 Descargando Grilla Biológica...")
+            
             copernicusmarine.subset(
                 dataset_id=PRODUCT_BIO,
                 minimum_latitude=zona['lat'] - 0.25, maximum_latitude=zona['lat'] + 0.25,
                 minimum_longitude=zona['lon'] - 0.25, maximum_longitude=zona['lon'] + 0.25,
-                start_datetime=ayer_str, # <--- CAMBIADO A AYER
-                end_datetime=ayer_str,   # <--- CAMBIADO A AYER
+                start_datetime=hoy_str, end_datetime=hoy_str, 
                 minimum_depth=PROF_EXACTA, maximum_depth=PROF_EXACTA,
                 raise_if_updating=True, disable_progress_bar=True,
                 output_filename="bio.nc",
-                username=USER_COP, password=PASS_COP
+                username=USER_COP, password=PASS_COP,                
             )
 
             ds_bio = xr.open_dataset("bio.nc").load()
