@@ -38,7 +38,7 @@
             .then(res => res.json())
             .then(data => {
                 // Llenar Físicos
-                const tFis = document.getElementById('tabla-fisicos');
+                const tFis = document.getElementById('tabla-datos_fisicos');
                 tFis.innerHTML = '';
                 data.fisicos.forEach(d => {
                     // Calculamos magnitud velocidad
@@ -47,7 +47,7 @@
                 });
 
                 // Llenar Bio
-                const tBio = document.getElementById('tabla-bio');
+                const tBio = document.getElementById('tabla-datos_bio');
                 tBio.innerHTML = '';
                 data.biologicos.forEach(d => {
                     tBio.innerHTML += `<tr><td>${d.fecha}</td><td>${d.clorofila}</td><td>${d.oxigeno}</td></tr>`;
