@@ -20,7 +20,7 @@
 
         <h2>🌊 Datos Físicos (Últimos 20)</h2>
         <table>
-            <thead><tr><th>Fecha</th><th>Temp (°C)</th><th>Salinidad</th><th>Vel. (m/s)</th><th>Nivel Mar</th></tr></thead>
+            <thead><tr><th>Fecha</th><th>Temp (°C)</th><th>Salinidad</th><th>Corriente U (m/s)</th><th>Corriente V (m/s)</th><th>Nivel Mar</th></tr></thead>
             <tbody id="tabla-fisicos"><tr><td colspan="5">Cargando...</td></tr></tbody>
         </table>
 
@@ -35,25 +35,52 @@
         const API_URL = ''; 
         
         fetch(`${API_URL}/api/v1/bitacora-completa`)
-            .then(res => res.json())
-            .then(data => {
-                // Llenar Físicos
-                const tFis = document.getElementById('tabla-datos_fisicos');
-                tFis.innerHTML = '';
-                data.fisicos.forEach(d => {
-                    // Calculamos magnitud velocidad
-                    let vel = Math.sqrt((d.u||0)**2 + (d.v||0)**2).toFixed(2);
-                    tFis.innerHTML += `<tr><td>${d.fecha}</td><td>${d.temp}</td><td>${d.salinidad}</td><td>${vel}</td><td>${d.nivel_mar}</td></tr>`;
-                });
-
-                // Llenar Bio
-                const tBio = document.getElementById('tabla-datos_bio');
-                tBio.innerHTML = '';
-                data.biologicos.forEach(d => {
-                    tBio.innerHTML += `<tr><td>${d.fecha}</td><td>${d.clorofila}</td><td>${d.oxigeno}</td></tr>`;
-                });
+            .then(res => {
+                if (!res.ok) throw new Error("Error del servidor (404 o 500)");
+                return res.json();
             })
-            .catch(err => alert("Error cargando bitácora: " + err));
+            .then(data => {
+                // CORRECCIÓN 1: Usamos el ID correcto 'tabla-fisicos'
+                const tFis = document.getElementById('tabla-fisicos');
+                tFis.innerHTML = '';
+                
+                // Verificamos si hay datos antes de recorrer
+                if(data.fisicos && data.fisicos.length > 0) {
+                    data.fisicos.forEach(d => {
+                        // CORRECCIÓN 2: Aseguramos que existan valores para evitar errores
+                        tFis.innerHTML += `<tr>
+                            <td>${d.fecha_medicion}</td>
+                            <td>${d.temperatura}</td>
+                            <td>${d.salinidad}</td>
+                            <td>${d.corriente_u}</td>
+                            <td>${d.corriente_v}</td>
+                            <td>${d.nivel_mar}</td>
+                        </tr>`;
+                    });
+                } else {
+                    tFis.innerHTML = '<tr><td colspan="6">No hay datos registrados</td></tr>';
+                }
+
+                // CORRECCIÓN 3: Usamos el ID correcto 'tabla-bio'
+                const tBio = document.getElementById('tabla-bio');
+                tBio.innerHTML = '';
+
+                if(data.biologicos && data.biologicos.length > 0) {
+                    data.biologicos.forEach(d => {
+                        tBio.innerHTML += `<tr>
+                            <td>${d.fecha_medicion}</td>
+                            <td>${d.clorofila}</td>
+                            <td>${d.oxigeno_disuelto}</td>
+                        </tr>`;
+                    });
+                } else {
+                    tBio.innerHTML = '<tr><td colspan="3">No hay datos registrados</td></tr>';
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert("Error cargando bitácora. Revisa la consola (F12).");
+            });
     </script>
 </body>
 </html>

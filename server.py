@@ -77,52 +77,42 @@ class GeoChileHandler(http.server.SimpleHTTPRequestHandler):
             return self.responder_json({"datos": datos})
 
         self.send_error(404, "Ruta no encontrada")
-        # --- API BITÁCORA (FÍSICA Y BIOLÓGICA SEPARADAS) ---
+
+        # API BITÁCORA
         if self.path == "/api/v1/bitacora-completa":
             conn = self.obtener_conexion()
-            
-            # Estructura que espera tu HTML
-            response_data = {
-                "fisicos": [],
-                "biologicos": []
-            }
+            response_data = { "fisicos": [], "biologicos": [] }
             
             if conn:
                 try:
                     cur = conn.cursor()
                     
-                    # 1. CONSULTA DATOS FÍSICOS (Últimos 20)
+                    # 1. FÍSICOS
                     cur.execute("""
                         SELECT fecha_medicion, temperatura, salinidad, 
                                corriente_u, corriente_v, nivel_mar 
-                        FROM datos_fisicos 
-                        ORDER BY fecha_medicion DESC 
-                        LIMIT 20
+                        FROM datos_fisicos ORDER BY fecha_medicion DESC LIMIT 20
                     """)
-                    
                     for r in cur.fetchall():
                         response_data["fisicos"].append({
-                            "fecha": r[0],
-                            "temp": r[1],
+                            "fecha_medicion": str(r[0]), 
+                            "temperatura": r[1],
                             "salinidad": r[2],
-                            "u": float(r[3] or 0),
-                            "v": float(r[4] or 0),
+                            "corriente_u": float(r[3] or 0),
+                            "corriente_v": float(r[4] or 0),
                             "nivel_mar": r[5]
                         })
 
-                    # 2. CONSULTA DATOS BIOLÓGICOS (Últimos 20)
+                    # 2. BIOLÓGICOS
                     cur.execute("""
                         SELECT fecha_medicion, clorofila, oxigeno_disuelto 
-                        FROM datos_bio 
-                        ORDER BY fecha_medicion DESC 
-                        LIMIT 20
+                        FROM datos_bio ORDER BY fecha_medicion DESC LIMIT 20
                     """)
-                    
                     for r in cur.fetchall():
                         response_data["biologicos"].append({
-                            "fecha": r[0],
+                            "fecha_medicion": str(r[0]),
                             "clorofila": r[1],
-                            "oxigeno": r[2]
+                            "oxigeno_disuelto": r[2]
                         })
 
                 except Exception as e:
@@ -130,7 +120,6 @@ class GeoChileHandler(http.server.SimpleHTTPRequestHandler):
                 finally:
                     conn.close()
             
-            # Enviamos el JSON con las dos listas
             return self.responder_json(response_data)
 
     # POST
