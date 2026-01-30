@@ -1,4 +1,5 @@
 # Librerías para Ciencia de Datos y Copernicus
+copernicusmarine
 xarray
 netCDF4
 pandas
@@ -9,3 +10,5 @@ psycopg2-binary
 
 # Librerías de utilidad
 python-dotenv
+
+schedule

@@ -5,6 +5,8 @@ import os
 import sys
 import math
 from datetime import date
+import schedule
+import time
 
 
 # 1. CONFIGURACIÓN
@@ -159,5 +161,18 @@ def procesar_oceanografia():
     conn.close()
     print("\n🏁 FINALIZADO: Todo Chile Actualizado.")
 
-if __name__ == "__main__":
+def job():
+    print("⏰ Iniciando tarea programada...")
     procesar_oceanografia()
+
+if __name__ == "__main__":
+    # Programamos para que corra todos los días a las 08:00 UTC
+    schedule.every().day.at("08:00").do(job)
+    
+    # Ejecutamos una vez al iniciar para no esperar a mañana
+    job() 
+    
+    print("🚀 Servidor de ETL iniciado. Esperando siguiente ciclo...")
+    while True:
+        schedule.run_pending()
+        time.sleep(60) # Revisa cada minuto si ya es la hora
